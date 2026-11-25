@@ -9,6 +9,20 @@ Bot summaries from `list` also include `lastActivityAt` (epoch milliseconds) whe
 
 ## Usage
 
+### Host shared memory
+
+```sh
+tobs shared-memory status
+tobs shared-memory set --dir /absolute/path/to/shared-memory
+tobs shared-memory clear
+```
+
+Use `--host <url>` for a running Host as its owner, or `--home <path>` for an offline Host. The directory must already exist on that Host and must be separate from all Bot memory directories. The Host stores the setting as `sharedMemoryRoot`. An empty value disables sharing.
+
+Existing and new PersonaBots get a `shared/` entry in their memory directory. An assistant uses a writable symlink where supported. Other Bots receive a copy with write permissions removed. If a symlink is unavailable, an assistant receives a writable copy. `status` reports each Bot's mount mode and read-only state.
+
+Copies are snapshots of regular files and directories, excluding Git metadata and symlinks. Run `set` again to refresh them. Writes in an assistant's fallback copy stay local and are discarded when the mount is replaced or cleared. The Bot's Git ignore rules exclude `shared`. Clearing removes managed mounts and preserves the shared root and its contents.
+
 ### Reciprocal computer relationships
 
 `relationships cancel <id> --confirm` cancels a proposal only while the owning Host still considers it pending. If a lost sync reply hid activation, it refuses with `relationship-already-active` and leaves the approved relationship and grants intact. The browser uses this condition when cleaning up cancelled enrollment; an unavailable cleanup response never triggers an unconditional retry.

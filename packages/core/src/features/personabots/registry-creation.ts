@@ -141,6 +141,15 @@ export function createRegistryCreationMethods(
     } catch {
       return { ok: false, reason: 'invalid-memory-dir' };
     }
+    try {
+      options.validateSharedMemoryPath?.(targetMemoryDir);
+    } catch (error) {
+      return {
+        ok: false,
+        reason: 'invalid-memory-dir',
+        detail: error instanceof Error ? error.message : String(error),
+      };
+    }
     const newMemoryDirectory = !existsSync(targetMemoryDir);
     const newBotDirectory = !existsSync(botDir(record.slug));
     try {
@@ -179,7 +188,10 @@ export function createRegistryCreationMethods(
       };
     }
     try {
-      write(record, true, newMemoryDirectory || managedDefault ? targetMemoryDir : undefined);
+      const save = () =>
+        write(record, true, newMemoryDirectory || managedDefault ? targetMemoryDir : undefined);
+      if (options.mountSharedMemory) options.mountSharedMemory(targetMemoryDir, record, save);
+      else save();
     } catch (error) {
       if (
         newMemoryDirectory &&
@@ -248,12 +260,11 @@ export function createRegistryCreationMethods(
       if (read(input.slug) !== undefined || existsSync(botDir(input.slug)))
         return { ok: false, reason: 'duplicate' };
 
+      const target = defaultMemoryDir(input.slug, input.ownerHumanId ?? 'local-human');
+      options.validateSharedMemoryPath?.(target);
       mkdirSync(botDir(input.slug));
       ownsBotDir = true;
-      mkdirSync(dirname(defaultMemoryDir(input.slug, input.ownerHumanId ?? 'local-human')), {
-        recursive: true,
-      });
-      const target = defaultMemoryDir(input.slug, input.ownerHumanId ?? 'local-human');
+      mkdirSync(dirname(target), { recursive: true });
       if (existsSync(target)) return { ok: false, reason: 'invalid-memory-dir' };
       renameSync(staging, target);
       importedMemory = target;

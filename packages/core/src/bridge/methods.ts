@@ -1,3 +1,6 @@
+import { dirname } from 'node:path';
+import { createSharedMemory } from '../memory/shared-memory.js';
+import { runSharedMemoryOperation } from '../features/personabots/shared-memory-operation.js';
 import {
   createHostSessionsMethods,
   type NativeSessions,
@@ -417,6 +420,7 @@ export interface BridgeMethods
 
   botModes: BotModeBridgeMethods['botModes'];
   botModeDefaultSet: BotModeBridgeMethods['botModeDefaultSet'];
+  sharedMemory(action: unknown, dir?: unknown): ReturnType<typeof runSharedMemoryOperation>;
   botModeSet: BotModeBridgeMethods['botModeSet'];
   botModeTemplateSave: BotModeBridgeMethods['botModeTemplateSave'];
   botModeTemplateDelete: BotModeBridgeMethods['botModeTemplateDelete'];
@@ -717,6 +721,15 @@ function buildBridgeMethods(
     listItem,
   );
   const methods: BridgeMethods = {
+    sharedMemory(action, dir) {
+      if (!isHostOwner() || human.caller === 'bot') throw new TeamError('permission-required');
+      return runSharedMemoryOperation(
+        createSharedMemory(dirname(globalRegistry.rootDir)),
+        globalRegistry,
+        action,
+        dir,
+      );
+    },
     ...createTeamBridge(human, deps.team),
     ...createModelProviderBridge(human, deps),
     ...createEngineAccountBridge(human, deps),

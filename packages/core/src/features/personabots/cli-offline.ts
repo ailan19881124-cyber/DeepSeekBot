@@ -1,6 +1,8 @@
 import { privateBotRegistry } from '../../team/bot-access.js';
 import { TeamRoles } from '../../team/roles.js';
 import { join } from 'node:path';
+import { realpathSync } from 'node:fs';
+import { defaultSpaceMemoryPath } from '../../workspaces/space-memory.js';
 import { createSqliteChannelStore } from '../../channels/sqlite-store.js';
 import { BOT_HARNESS_SCHEMA_PLAN } from '../../database/schema-plan.js';
 import {
@@ -11,6 +13,7 @@ import {
 } from '../../database/owner.js';
 import { resolveDshHome } from '../../im/config-store.js';
 import { cloneMemoryRepository } from '../../memory/clone.js';
+import { createSharedMemory } from '../../memory/shared-memory.js';
 import { ensureMemoryRepository } from '../../memory/repository.js';
 import { syncBotDescriptor } from '../../bots/bot-descriptor-sync.js';
 import type { PersonaBotRecord } from '../../bots/persona-bot.js';
@@ -30,6 +33,7 @@ export function resolveHome(values: CreateValues, io: BotCreateCliIo): string {
 export function openRegistry(
   dshHome: string,
   administration = false,
+  hostMemoryPaths = false,
 ): {
   owner: OperationalDatabaseOwner;
   registry: PersonaBotRegistry;
@@ -53,8 +57,22 @@ export function openRegistry(
     );
   }
   try {
+    const sharedMemory = createSharedMemory(join(dshHome, 'botharness'));
     const registry = createPersonaBotRegistry({
       rootDir: join(dshHome, 'botharness', 'bots'),
+      mountSharedMemory: sharedMemory.mountNew,
+      validateSharedMemoryPath: sharedMemory.validateMemoryDir,
+      ...(hostMemoryPaths
+        ? {
+            defaultMemoryPath: (slug: string, humanId: string) =>
+              defaultSpaceMemoryPath(
+                attachOperationalModule(owner, 'workspace-spaces'),
+                realpathSync(dshHome),
+                humanId,
+                slug,
+              ),
+          }
+        : {}),
       database: owner,
       cloneMemory: (destination, url) => cloneMemoryRepository({ destination, url }),
       initializeMemory: (memoryDir) => {

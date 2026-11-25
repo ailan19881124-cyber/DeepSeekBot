@@ -4,7 +4,7 @@ import { defaultSpaceMemoryPath } from '../../workspaces/space-memory.js';
 import type { TeamError } from '../../team/error.js';
 import { requireBotEngineAccount, requireBotModel } from '../../team/models.js';
 import { humanContext } from '../../humans/context.js';
-import { realpathSync } from 'node:fs';
+import { realpathSync, rmSync } from 'node:fs';
 import type {
   EngineBotTool,
   EngineToolInfo,
@@ -26,6 +26,7 @@ import { DEFAULT_MODEL_PRESET_ID, defaultPresetPlan } from '../../models/presets
 import type { ChannelLiveHub } from '../../channels/live.js';
 import type { ChannelDraftEvent } from '../../channels/draft.js';
 import type { OperationalDatabaseOwner } from '../../database/owner.js';
+import { createSharedMemory, removeSharedMemoryMount } from '../../memory/shared-memory.js';
 import { ensureMemoryRepository } from '../../memory/repository.js';
 import { initializeMemoryRepositoryAsync } from '../../memory/git.js';
 import { cloneMemoryRepository } from '../../memory/clone.js';
@@ -143,6 +144,10 @@ export function createDeletions({
     accept: (slug, commit) => channels.removeBotFromGroups(slug, commit),
     ...(options.capture === undefined ? {} : { capture: options.capture }),
     protectedPaths: [dshHome],
+    removeMemory(path) {
+      removeSharedMemoryMount(path);
+      rmSync(path, { recursive: true });
+    },
     database: operationalDatabase,
     registry,
     dependencies: (slug) => ({
@@ -266,8 +271,12 @@ export function createRegistry(
   },
 ) {
   const { rootDir, dshHome, operationalDatabase, options, onAppearanceImported } = deps;
+  const sharedMemory = createSharedMemory(join(dshHome, 'botharness'));
   return createPersonaBotRegistry({
     rootDir,
+    mountSharedMemory: sharedMemory.mountNew,
+    sharedMemoryFor: sharedMemory.mountFor,
+    validateSharedMemoryPath: sharedMemory.validateMemoryDir,
     defaultMemoryPath: (slug, humanId) =>
       defaultSpaceMemoryPath(
         attachOperationalModule(operationalDatabase, 'workspace-spaces'),

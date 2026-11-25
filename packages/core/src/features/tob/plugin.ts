@@ -28,7 +28,10 @@ import { TOB_VOICE_CAPABILITIES } from '../../tob/cli-voice-operations.js';
 import { approveTobCliOperation } from '../../tob/cli-approval.js';
 import type { ApprovalService } from '@deepseek-ai/dsh-user-approval';
 import { installOrchestratorFileTools } from '../../workspaces/orchestrator-file-tools.js';
-import { nativeExecutionRoot } from '../../workspaces/grant-native-tools.js';
+import {
+  assistantSharedMemoryRoot,
+  nativeExecutionRoot,
+} from '../../workspaces/grant-native-tools.js';
 import { grantExecutionDenial, sessionHasFullAccess } from '../../workspaces/grant-execution.js';
 import type { ChannelToolApproval } from '../../workspaces/tool-approval.js';
 import type {
@@ -459,6 +462,12 @@ export function createOrchestratorFileSetup(
             };
           },
         }),
+      () => {
+        const owner = deps.core.ownership.resolve(agent.session.id);
+        return owner?.rootRole === 'orchestrator'
+          ? assistantSharedMemoryRoot(deps.core, owner.botSlug)
+          : undefined;
+      },
     );
 }
 

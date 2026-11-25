@@ -22,6 +22,7 @@ import {
   ONLINE_MANAGEMENT_COMMANDS,
   runOnlineManagement,
 } from './cli-management.js';
+import { runSharedMemoryCli } from './cli-shared-memory.js';
 import { BOT_CREATE_HELP } from '../features/personabots/cli-help.js';
 export { BOT_CREATE_HELP } from '../features/personabots/cli-help.js';
 import type { BotCreateCliIo, BotCreateFailure } from '../features/personabots/cli-types.js';
@@ -131,6 +132,10 @@ const SEARCH_INDEX: ReadonlyArray<{ command: string; description: string }> = [
   },
   { command: 'model-preset-apply', description: 'apply a model preset to a bot' },
   { command: 'model-plan', description: 'show a bot model plan' },
+  {
+    command: 'shared-memory',
+    description: 'shared-memory status|set|clear: manage Host shared Bot memory',
+  },
   { command: 'memory-snapshot', description: 'read a bot memory snapshot' },
   { command: 'memory-file', description: 'read one bot memory file' },
   { command: 'memory-history', description: 'list bot memory commits' },
@@ -298,6 +303,11 @@ export async function runBotCreateCli(
     if (!hasCliDeclaration(command)) throw usageError('Unknown command.');
     if (command === 'marketplace-blocklist') {
       out.stdout(JSON.stringify(await runMarketplaceBlocklist(rest, io.env), null, 2));
+      return 0;
+    }
+    if (command === 'shared-memory') {
+      if (values.as !== undefined) throw usageError('Shared memory requires the Host owner.');
+      out.stdout(JSON.stringify(await runSharedMemoryCli(rest, values, io), null, 2));
       return 0;
     }
     if (command === 'ssh-tunnel') return await runSshCli(rest, values, out);

@@ -27,6 +27,8 @@ export interface BotModeTemplate {
 }
 
 export interface BotModeSettings {
+  sharedMemoryRoot(): string;
+  setSharedMemoryRoot(root: string): void;
   defaultMode(): string | undefined;
   setDefaultMode(mode: string | undefined): void;
   templates(): BotModeTemplate[];
@@ -40,6 +42,7 @@ export interface BotModeSettings {
 }
 
 interface StoredSettings {
+  sharedMemoryRoot?: string;
   defaultMode?: string;
   templates?: BotModeTemplate[];
   botTemplates?: Record<string, string>;
@@ -85,6 +88,9 @@ function readSettings(file: string): StoredSettings {
   if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed))
     throw new Error(`${BOT_MODE_SETTINGS_FILE} must hold a JSON object`);
   const source = parsed as Record<string, unknown>;
+  const sharedMemoryRoot = source['sharedMemoryRoot'];
+  if (sharedMemoryRoot !== undefined && typeof sharedMemoryRoot !== 'string')
+    throw new Error(`${BOT_MODE_SETTINGS_FILE} has an invalid sharedMemoryRoot`);
   const mode = source['defaultMode'];
   if (mode !== undefined && !isBotModeId(mode))
     throw new Error(`${BOT_MODE_SETTINGS_FILE} has an invalid defaultMode`);
@@ -101,6 +107,7 @@ function readSettings(file: string): StoredSettings {
   )
     throw new Error(`${BOT_MODE_SETTINGS_FILE} has invalid botTemplates`);
   return {
+    ...(sharedMemoryRoot ? { sharedMemoryRoot } : {}),
     ...(mode === undefined ? {} : { defaultMode: mode }),
     ...(templates === undefined || templates.length === 0
       ? {}
@@ -168,6 +175,7 @@ export function createBotModeSettings(dir: string): BotModeSettings {
   };
   const write = (next: StoredSettings) => {
     const compact: StoredSettings = {
+      ...(next.sharedMemoryRoot ? { sharedMemoryRoot: next.sharedMemoryRoot } : {}),
       ...(next.defaultMode === undefined ? {} : { defaultMode: next.defaultMode }),
       ...(next.templates === undefined || next.templates.length === 0
         ? {}
@@ -181,6 +189,12 @@ export function createBotModeSettings(dir: string): BotModeSettings {
     cached = compact;
   };
   const settings: BotModeSettings = {
+    sharedMemoryRoot() {
+      return fresh().sharedMemoryRoot ?? '';
+    },
+    setSharedMemoryRoot(sharedMemoryRoot) {
+      write({ ...fresh(), sharedMemoryRoot });
+    },
     defaultMode() {
       return safe().defaultMode;
     },

@@ -1,4 +1,5 @@
-import { toRemoteError } from './rpc-result.js';
+import type { BridgeRpcReceiver } from './rpc-types.js';
+import { toRemoteError, unwrap } from './rpc-result.js';
 import { markRemoteMethods, markRemoteStreams } from './remote-descriptors.js';
 import { TeamError, type TeamService } from '../team/service.js';
 import { type HumanContext } from '../humans/context.js';
@@ -181,6 +182,9 @@ const rpcMethods = {
   ...promptInspectionRpc,
   ...sessionControlRpc,
   ...modelConfigurationRpc,
+  sharedMemory(this: BridgeRpcReceiver, action: unknown, dir?: unknown) {
+    return unwrap(this.methods.sharedMemory(action, dir));
+  },
   list: personabotsRpcMethods.list,
   activitySnapshot: activityRpcMethods.activitySnapshot,
   ...personaBotLifecycleRpc,
@@ -620,6 +624,7 @@ markRemoteMethods(BotharnessBridgeService.prototype, [
   'idleCompactionCacheLifetimeSet',
   'compactionThresholdSet',
   'standingLimitsSet',
+  'sharedMemory',
   'botAvatarSet',
   'botAppearanceSet',
   'botPrimaryColorSet',

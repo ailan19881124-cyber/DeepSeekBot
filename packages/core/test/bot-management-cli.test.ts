@@ -927,3 +927,18 @@ it('continues bot-activity sessions only for the same Bot incarnation and activi
     (await invoke(['bot-activity', 'ada', '--cursor', cursor], live.url)).value.error.code,
   ).toBe('changed-read-target');
 });
+
+it('routes shared-memory status, set and clear to the authenticated Host', async () => {
+  const remote = await host((method) => {
+    expect(method).toBe('sharedMemory');
+    return { ok: true, value: { sharedMemoryRoot: '', mounts: [] } };
+  });
+  for (const args of [['status'], ['set', '--dir', '/host/shared-memory'], ['clear']]) {
+    expect(await invoke(['shared-memory', ...args], remote.url)).toMatchObject({ code: 0 });
+  }
+  expect(remote.calls).toEqual([
+    { method: 'sharedMemory', args: { action: 'status' } },
+    { method: 'sharedMemory', args: { action: 'set', dir: '/host/shared-memory' } },
+    { method: 'sharedMemory', args: { action: 'clear' } },
+  ]);
+});

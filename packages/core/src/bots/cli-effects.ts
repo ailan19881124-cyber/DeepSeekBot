@@ -505,6 +505,7 @@ export const CLI_EFFECTS = {
   'session-stop': { effects: destructive, brokerRead: false },
   'session-subagents': { effects: read, brokerRead: true },
   settings: { effects: read, brokerRead: true },
+  'shared-memory': { effects: management, brokerRead: false },
   'settings-set': { effects: opaque, brokerRead: false },
   'share-draft-decide': { effects: write, brokerRead: false },
   'share-draft-discard': { effects: destructive, brokerRead: false },

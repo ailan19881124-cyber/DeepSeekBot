@@ -37,6 +37,8 @@ export function privateBotRegistry(
       }),
     remove: (slug, options) =>
       ownsBot(human, registry.getHistorical(slug)) && registry.remove(slug, options),
+    sharedMemoryFor: (slug) =>
+      own(registry.get(slug)) ? registry.sharedMemoryFor?.(slug) : undefined,
     memoryDirFor: (slug) =>
       own(registry.getHistorical(slug)) ? registry.memoryDirFor(slug) : undefined,
     retainedRecordBody: (slug) =>
@@ -54,6 +56,7 @@ export function privateBotRegistry(
     | 'createFromGit'
     | 'createFromFiles'
     | 'remove'
+    | 'sharedMemoryFor'
     | 'memoryDirFor'
     | 'retainedRecordBody'
   >;

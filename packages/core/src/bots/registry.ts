@@ -50,6 +50,8 @@ import {
 import { parsePromptLimitValues, type PromptLimitValues } from '../prompts/prompt-limits.js';
 import { parsePromptPartOverrides, type PromptPartOverrides } from '../prompts/prompt-presets.js';
 
+import type { SharedMemoryMount } from '../memory/shared-memory.js';
+
 export interface MemoryRepositoryInitialization {
   ok: boolean;
   code?: 'git-not-found';
@@ -59,6 +61,9 @@ export interface MemoryRepositoryInitialization {
 export interface PersonaBotRegistryOptions {
   rootDir: string;
   defaultMemoryPath?: (slug: string, humanId: string) => string;
+  sharedMemoryFor?: (dir: string) => SharedMemoryMount | undefined;
+  validateSharedMemoryPath?: (dir: string) => void;
+  mountSharedMemory?: (dir: string, bot: PersonaBotRecord, save: () => void) => void;
   validateMemoryPath?: (slug: string, humanId: string, path: string) => void;
   onCreated?: (record: PersonaBotRecord, database: DatabaseSync) => void;
   creationTopics?: readonly string[];
@@ -107,6 +112,7 @@ export interface PersonaBotRegistry {
   list(ownerHumanId?: string): PersonaBotRecord[];
   findByWorkspace(workspace: string): PersonaBotRecord | undefined;
   remove(slug: string, options?: RemovePersonaBotOptions): boolean;
+  sharedMemoryFor?(slug: string): SharedMemoryMount | undefined;
   memoryDirFor(slug: string): string | undefined;
   defaultMemoryDirFor(slug: string): string;
   setMemoryDir(slug: string, memoryDir: string | undefined): UpdatePersonaBotResult;
@@ -561,6 +567,10 @@ export function createPersonaBotRegistry(options: PersonaBotRegistryOptions): Pe
     remove(slug) {
       if (!isValidSlug(slug) || read(slug) === undefined) return false;
       throw new Error('Use confirmed PersonaBot deletion; direct Registry removal is unavailable');
+    },
+    sharedMemoryFor(slug) {
+      const record = active(slug);
+      return record && options.sharedMemoryFor?.(memoryDirOf(record));
     },
     memoryDirFor(slug) {
       const record = read(slug);

@@ -41,6 +41,7 @@ export async function installOrchestratorFileTools(
   presets: DshAgentPresetHost | undefined,
   rootFor: (name: string, args: unknown) => string,
   shellFor?: (ctx: Context, shell: ShellExecutor) => ShellExecutor,
+  sharedWritableRoot?: () => string | undefined,
 ): Promise<() => Promise<void>> {
   const base = agentCtx.get('sandboxPolicy');
   const fs = presets?.serviceFor?.(agent, 'fs') ?? agentCtx.get('fs');
@@ -78,7 +79,15 @@ export async function installOrchestratorFileTools(
           const current = callPolicy.getStore();
           return current === undefined || request?.session !== agent.session
             ? policy
-            : { ...policy, workspaceRoot: current.workspaceRoot };
+            : {
+                ...policy,
+                workspaceRoot: current.workspaceRoot,
+                ...(current.additionalWritableRoots === undefined
+                  ? {}
+                  : {
+                      additionalWritableRoots: current.additionalWritableRoots,
+                    }),
+              };
         },
       });
       ctx.on('tools/execute', (execution, next) => {
@@ -90,7 +99,20 @@ export async function installOrchestratorFileTools(
           return next();
         if (base.resolve({ session: agent.session }).mode === 'danger-full-access') return next();
         const workspaceRoot = rootFor(execution.name, execution.arguments);
-        return callPolicy.run({ ...base.resolve({ session: agent.session }), workspaceRoot }, next);
+        const policy = base.resolve({ session: agent.session });
+        const shared = sharedWritableRoot?.();
+        return callPolicy.run(
+          {
+            ...policy,
+            workspaceRoot,
+            ...(shared === undefined
+              ? {}
+              : {
+                  additionalWritableRoots: [...(policy.additionalWritableRoots ?? []), shared],
+                }),
+          },
+          next,
+        );
       });
     },
   });

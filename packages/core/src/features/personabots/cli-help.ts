@@ -1,6 +1,9 @@
 export const BOT_CREATE_HELP = `tobs: manage your Bots
 
 Usage:
+  tobs shared-memory status [--home <path> | --host <url>]
+  tobs shared-memory set --dir <absolute path> [--home <path> | --host <url>]
+  tobs shared-memory clear [--home <path> | --host <url>]
   tobs ssh-tunnel <alias> --pairing-file <private-file> --out <new-private-file>
     --local-port <port> --remote-port <port> [--ssh-config <absolute-file>]
   tobs create --name <name> [--kind assistant|bot] [--persona <text> | --persona-stdin]

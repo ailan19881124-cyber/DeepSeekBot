@@ -9,6 +9,20 @@
 
 ## 用法
 
+### Host 共享记忆
+
+```sh
+tobs shared-memory status
+tobs shared-memory set --dir /绝对路径/共享记忆
+tobs shared-memory clear
+```
+
+运行中的 Host 由所有者通过 `--host <url>` 操作，离线 Host 使用 `--home <path>`。目录必须已存在于目标 Host，且与所有 Bot 的记忆目录互不包含。Host 将设置保存为 `sharedMemoryRoot`，空值表示关闭共享。
+
+已有和新建的 PersonaBot 都会在记忆目录中获得 `shared/`。平台支持符号链接时，助手通过它读写共享根目录。其他 Bot 使用去掉写权限的副本。符号链接不可用时，助手使用可写副本。`status` 会显示各 Bot 的挂载模式和只读状态。
+
+副本是普通文件和目录的快照，排除 Git 元数据与符号链接。再次运行 `set` 可以刷新副本。助手写入回退副本的内容只保存在本地，替换或清除挂载时会被丢弃。Bot 的 Git 忽略规则包含 `shared`。清除命令会移除受管理的挂载，并保留共享根目录及其内容。
+
 ### 电脑双向关系
 
 `relationships cancel <关系ID> --confirm` 仅在所属 Host 仍将关系视为待批准时取消提议。同步回复丢失但关系已激活时，返回 `relationship-already-active`，保留已批准关系及授权。浏览器取消登记时使用相同条件；清理回复不可用时不改为无条件重试。

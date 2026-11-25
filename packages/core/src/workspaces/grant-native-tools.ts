@@ -73,6 +73,33 @@ function canonicalRoot(root: string): string | undefined {
   }
 }
 
+export function assistantSharedMemoryRoot(core: GrantCore, botSlug: string): string | undefined {
+  const mount = core.registry.sharedMemoryFor?.(botSlug);
+  if (mount?.mode !== 'symlink' || core.registry.get(botSlug)?.kind !== 'assistant')
+    return undefined;
+  try {
+    core.grants.validatePath?.(botSlug, mount.path);
+    return mount.path;
+  } catch {
+    return undefined;
+  }
+}
+
+function sharedMemoryWriteDenial(
+  core: GrantCore,
+  session: Session,
+  target: string,
+): string | undefined {
+  const owner = core.ownership.resolve(session.id);
+  if (!owner) return undefined;
+  const mount = core.registry.sharedMemoryFor?.(owner.botSlug);
+  return mount?.mode === 'copy' &&
+    core.registry.get(owner.botSlug)?.kind !== 'assistant' &&
+    within(mount.path, target)
+    ? 'Shared memory is read-only for this Bot'
+    : undefined;
+}
+
 export function currentRoots(core: GrantCore, session: Session, kind: AccessKind): string[] {
   return sessionRoots(core, session.id, kind, session.header.cwd);
 }
@@ -109,7 +136,8 @@ export function sessionRoots(
           return [];
         }
       });
-    return [memory, ...active];
+    const shared = assistantSharedMemoryRoot(core, owner.botSlug);
+    return shared ? [memory, shared, ...active] : [memory, ...active];
   }
   if (owner.rootRole !== 'assignment') return [];
   const permission = core.runtime.getAssignment(owner.botSlug, owner.sessionId)?.permission;
@@ -260,6 +288,10 @@ function nativeFileSpaceDenialImpl(
     const target = canonicalTarget(path);
     if (target === undefined)
       return validateSpacePath(core, session, path) ?? 'grant-protected-path';
+    if (request.kind === 'write') {
+      const denial = sharedMemoryWriteDenial(core, session, target);
+      if (denial) return denial;
+    }
     if (originalAttachmentRoot(core, session, target, request.kind) !== undefined) continue;
     const denial = validateSpacePath(core, session, path);
     if (denial) return denial;
@@ -297,6 +329,10 @@ function nativeFileToolDenialImpl(
       return (
         validateSpacePath(core, session, path) ?? 'BotHarness Session file path cannot be resolved'
       );
+    if (request.kind === 'write') {
+      const denial = sharedMemoryWriteDenial(core, session, target);
+      if (denial) return denial;
+    }
     if (originalAttachmentRoot(core, session, target, request.kind) !== undefined) continue;
     const spaceDenial = validateSpacePath(core, session, path);
     if (spaceDenial) return spaceDenial;

@@ -18,6 +18,14 @@ Why:
 
 Enforced by: `memory-git.test.ts`, `memory-repository.test.ts`, `memory-integration.test.ts`. Path escapes and `.git` access are refused (`memory/jail.ts`, `memory-store.test.ts`).
 
+### Host shared memory
+
+The Host owner can configure a shared folder for work records and shared persona material. The Host stores `sharedMemoryRoot` with Bot settings in `bot-modes.json`. Live and offline CLI commands use the same mount operation. Each Bot keeps its own Memory Repository and Git ignores the managed `shared/` entry.
+
+Assistants prefer a symlink to see and update the Host folder directly. A symlink shares the target's permissions, so other Bots get permission-restricted copies. Where symlinks are unavailable, assistants get writable copies. Copies refresh on an explicit `set`. Mount ownership metadata allows the Host to clear or replace managed entries while preserving pre-existing user folders.
+
+Covered by `shared-memory.test.ts` and the online routing case in `bot-management-cli.test.ts`.
+
 ## 2. The Host falls back to a Managed Git
 
 <a id="adr-0140"></a>
