@@ -112,7 +112,7 @@ export async function runEngineTurn(
     ].filter((tool) => ENGINE_GATEWAY_TOOLS.has(tool.name));
     const text = [run.message, run.inbox].filter((part) => part.trim().length > 0).join('\n\n');
     const promptText = adapter.promptText(run.sessionId);
-    const persona = adapter.enginePersona?.(run.bot) ?? {};
+    const persona = adapter.enginePersona?.(run.bot, run.sessionId) ?? {};
     const sessionCwd = adapter.orchestratorCwd?.(run.bot);
     const pendingReplies = new Set<string>();
     run.inputAccepted?.();

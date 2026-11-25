@@ -1,3 +1,6 @@
+import { dirname } from 'node:path';
+import { readSharedPersonaBase } from './shared-persona.js';
+import { createBotModeSettings } from '../runtime/bot-mode-settings.js';
 import { queryOverviewMemory, type OverviewMemory } from './overview.js';
 import { createMemoryFiles } from './file-actions.js';
 import type { PersonaBotRegistry } from '../bots/registry.js';
@@ -7,7 +10,7 @@ import { createMemoryAcceptance, type MemoryAcceptance } from './accepted.js';
 import { createMemoryGit } from './git.js';
 import { inspectMemoryRepository, type MemoryRepositoryInspection } from './repository.js';
 import { createMemoryStore, type MemoryStore } from './store.js';
-import { DEFAULT_STANDING_LIMITS, type StandingLimits } from './soul.js';
+import { DEFAULT_STANDING_LIMITS, renderStandingSection } from './soul.js';
 
 export interface MemoryAgentRef {
   session?: { id?: string };
@@ -26,6 +29,7 @@ export interface MemoryService extends MemoryAcceptance, ReturnType<typeof creat
   storeForAgent(agent: MemoryAgentRef | undefined): MemoryStore | undefined;
 
   personaForSession(sessionId: string | undefined): string;
+  sharedPersonaForEngineSession(sessionId: string): string | undefined;
 
   refreshPersonaAfterCompaction(botSlug: string, sessionId: string): { refreshed: boolean };
 
@@ -89,10 +93,47 @@ export function createMemoryService(options: MemoryServiceOptions): MemoryServic
     return storeForMemoryDir(memoryDir);
   };
 
-  const limitsForSession = (sessionId: string): StandingLimits => {
+  const SHARED_TITLE = 'Shared Persona Base';
+  const sharedSection = (sessionId: string): string | undefined => {
+    const owner = ownership.resolve(sessionId);
+    if (owner?.rootRole !== 'orchestrator') return undefined;
+    const mount = registry.sharedMemoryFor?.(owner.botSlug);
+    if (!mount) return undefined;
+    const base = readSharedPersonaBase(mount.path);
+    if (!base) return undefined;
+    const limit = createBotModeSettings(dirname(registry.rootDir)).sharedPersonaBaseLimit();
+    return renderStandingSection(SHARED_TITLE, 'shared/persona/base.md', base, limit);
+  };
+  const standingPrompt = (
+    store: MemoryStore,
+    sessionId: string,
+    shared = sharedSection(sessionId),
+  ): string => {
     const owner = ownership.resolve(sessionId);
     const record = owner === undefined ? undefined : registry.get(owner.botSlug);
-    return record?.standingLimits ?? DEFAULT_STANDING_LIMITS;
+    const standing = store.standingPrompt(record?.standingLimits ?? DEFAULT_STANDING_LIMITS);
+    if (!shared) return standing;
+    return [
+      shared,
+      standing,
+      'Shared work records are in shared/worklog/. Use your tools to read them when needed.',
+    ]
+      .filter(Boolean)
+      .join('\n\n');
+  };
+  const freeze = (sessionId: string, body: string): string => {
+    const at = (options.now ?? (() => new Date()))().toISOString();
+    return ownership.recordPersonaSnapshot(sessionId, body, at).body;
+  };
+  const sharedPersonaForEngineSession = (sessionId: string): string | undefined => {
+    const recorded = ownership.personaSnapshot(sessionId);
+    if (recorded !== undefined)
+      return recorded.body.startsWith(`## ${SHARED_TITLE} (`) ? recorded.body : undefined;
+    const shared = sharedSection(sessionId);
+    if (!shared) return undefined;
+    const store = storeForSession(sessionId);
+    if (!store) return undefined;
+    return freeze(sessionId, standingPrompt(store, sessionId, shared));
   };
 
   const personaForSession = (sessionId: string | undefined): string => {
@@ -101,9 +142,7 @@ export function createMemoryService(options: MemoryServiceOptions): MemoryServic
     if (recorded !== undefined) return recorded.body;
     const store = storeForSession(sessionId);
     if (store === undefined) return '';
-    const body = store.standingPrompt(limitsForSession(sessionId));
-    const at = (options.now ?? (() => new Date()))().toISOString();
-    return ownership.recordPersonaSnapshot(sessionId, body, at).body;
+    return freeze(sessionId, standingPrompt(store, sessionId));
   };
 
   const refreshPersonaAfterCompaction = (
@@ -114,7 +153,7 @@ export function createMemoryService(options: MemoryServiceOptions): MemoryServic
     if (owner === undefined || owner.botSlug !== botSlug) return { refreshed: false };
     const store = storeForSession(sessionId);
     if (store === undefined) return { refreshed: false };
-    const current = store.standingPrompt(limitsForSession(sessionId));
+    const current = standingPrompt(store, sessionId);
     if (ownership.personaSnapshot(sessionId)?.body === current) return { refreshed: false };
     ownership.refreshPersonaSnapshot(
       sessionId,
@@ -128,7 +167,7 @@ export function createMemoryService(options: MemoryServiceOptions): MemoryServic
     const recorded = ownership.personaSnapshot(sessionId);
     const store = storeForSession(sessionId);
     if (recorded === undefined || store === undefined) return false;
-    return recorded.body !== store.standingPrompt(limitsForSession(sessionId));
+    return recorded.body !== standingPrompt(store, sessionId);
   };
 
   return {
@@ -187,6 +226,7 @@ export function createMemoryService(options: MemoryServiceOptions): MemoryServic
         : createMemoryGit(memoryDir).activitySince(sinceIso);
     },
     personaForSession,
+    sharedPersonaForEngineSession,
     refreshPersonaAfterCompaction,
     personaPending,
     storeForSession,

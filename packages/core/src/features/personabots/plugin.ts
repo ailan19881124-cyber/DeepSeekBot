@@ -593,8 +593,12 @@ export function createHostAgentAdapter(
     engineWorkspaceMode: (slug, permission) => engineWorkspaceMode(deps.core, slug, permission),
     engineTools: (info) => deps.core.engineTools(info),
     engineToolGate,
-    enginePersona: (bot) =>
-      readEnginePersona(deps.core.registry.memoryDirFor(bot.slug), bot.standingLimits),
+    enginePersona: (bot, sessionId) => {
+      const standingPrompt = deps.core.memory.sharedPersonaForEngineSession(sessionId);
+      return standingPrompt === undefined
+        ? readEnginePersona(deps.core.registry.memoryDirFor(bot.slug), bot.standingLimits)
+        : { standingPrompt };
+    },
     tobCliInvocation,
     ...(config.genuiPreviewBrowserPath === undefined
       ? {}

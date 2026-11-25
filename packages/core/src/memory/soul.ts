@@ -98,7 +98,12 @@ export function standingUsageFromFiles(
   }, limits);
 }
 
-function renderSection(title: string, file: string, body: string, limit: number): string {
+export function renderStandingSection(
+  title: string,
+  file: string,
+  body: string,
+  limit: number,
+): string {
   const characters = [...body.trimEnd()];
   const count = characters.length;
   const percent = Math.round((count / limit) * 100);
@@ -114,11 +119,13 @@ export function renderStandingPrompt(
   const sections: string[] = [];
   const soul = readSoulBody(root);
   if (soul !== undefined && soul.body.trim().length > 0) {
-    sections.push(renderSection('Soul', soul.file, soul.body, limits.soul));
+    sections.push(renderStandingSection('Soul', soul.file, soul.body, limits.soul));
   }
   const coreMemory = readBody(root, CORE_MEMORY_FILE);
   if (coreMemory !== undefined && coreMemory.trim().length > 0) {
-    sections.push(renderSection('Core Memory', CORE_MEMORY_FILE, coreMemory, limits.coreMemory));
+    sections.push(
+      renderStandingSection('Core Memory', CORE_MEMORY_FILE, coreMemory, limits.coreMemory),
+    );
   }
   return sections.join('\n\n');
 }

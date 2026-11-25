@@ -4,6 +4,8 @@ import { join } from 'node:path';
 
 import { atomicWriteFile } from '../fs/atomic-write.js';
 
+const DEFAULT_SHARED_PERSONA_BASE_LIMIT = 2000;
+
 export const BOT_MODE_SETTINGS_FILE = 'bot-modes.json';
 
 export const INHERIT_BOT_MODE = '@global';
@@ -28,6 +30,7 @@ export interface BotModeTemplate {
 
 export interface BotModeSettings {
   sharedMemoryRoot(): string;
+  sharedPersonaBaseLimit(): number;
   setSharedMemoryRoot(root: string): void;
   defaultMode(): string | undefined;
   setDefaultMode(mode: string | undefined): void;
@@ -43,6 +46,7 @@ export interface BotModeSettings {
 
 interface StoredSettings {
   sharedMemoryRoot?: string;
+  sharedPersonaBaseLimit?: number;
   defaultMode?: string;
   templates?: BotModeTemplate[];
   botTemplates?: Record<string, string>;
@@ -91,6 +95,11 @@ function readSettings(file: string): StoredSettings {
   const sharedMemoryRoot = source['sharedMemoryRoot'];
   if (sharedMemoryRoot !== undefined && typeof sharedMemoryRoot !== 'string')
     throw new Error(`${BOT_MODE_SETTINGS_FILE} has an invalid sharedMemoryRoot`);
+  const rawLimit = source['sharedPersonaBaseLimit'];
+  const sharedPersonaBaseLimit =
+    typeof rawLimit === 'number' && Number.isSafeInteger(rawLimit) && rawLimit > 0
+      ? rawLimit
+      : undefined;
   const mode = source['defaultMode'];
   if (mode !== undefined && !isBotModeId(mode))
     throw new Error(`${BOT_MODE_SETTINGS_FILE} has an invalid defaultMode`);
@@ -108,6 +117,7 @@ function readSettings(file: string): StoredSettings {
     throw new Error(`${BOT_MODE_SETTINGS_FILE} has invalid botTemplates`);
   return {
     ...(sharedMemoryRoot ? { sharedMemoryRoot } : {}),
+    ...(sharedPersonaBaseLimit === undefined ? {} : { sharedPersonaBaseLimit }),
     ...(mode === undefined ? {} : { defaultMode: mode }),
     ...(templates === undefined || templates.length === 0
       ? {}
@@ -176,6 +186,9 @@ export function createBotModeSettings(dir: string): BotModeSettings {
   const write = (next: StoredSettings) => {
     const compact: StoredSettings = {
       ...(next.sharedMemoryRoot ? { sharedMemoryRoot: next.sharedMemoryRoot } : {}),
+      ...(next.sharedPersonaBaseLimit === undefined
+        ? {}
+        : { sharedPersonaBaseLimit: next.sharedPersonaBaseLimit }),
       ...(next.defaultMode === undefined ? {} : { defaultMode: next.defaultMode }),
       ...(next.templates === undefined || next.templates.length === 0
         ? {}
@@ -191,6 +204,9 @@ export function createBotModeSettings(dir: string): BotModeSettings {
   const settings: BotModeSettings = {
     sharedMemoryRoot() {
       return fresh().sharedMemoryRoot ?? '';
+    },
+    sharedPersonaBaseLimit() {
+      return fresh().sharedPersonaBaseLimit ?? DEFAULT_SHARED_PERSONA_BASE_LIMIT;
     },
     setSharedMemoryRoot(sharedMemoryRoot) {
       write({ ...fresh(), sharedMemoryRoot });

@@ -157,7 +157,14 @@ export interface DshBotAgentAdapterOptions {
     slug: string,
     permission?: AssignmentAgentRun['permission'],
   ): EngineWorkspaceMode;
-  enginePersona?: (bot: PersonaBotRecord) => { soul?: string; coreMemory?: string };
+  enginePersona?: (
+    bot: PersonaBotRecord,
+    sessionId: string,
+  ) => {
+    soul?: string;
+    coreMemory?: string;
+    standingPrompt?: string;
+  };
   engineTools?: EngineToolSource;
   engineToolGate?: EngineToolGate;
 }

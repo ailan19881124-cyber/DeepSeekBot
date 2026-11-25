@@ -40,7 +40,10 @@ export function mountEngineTools(
   ctx.effect(
     () =>
       core.contributeEngineTools(({ botSlug }) =>
-        createEngineMemoryTools(() => core.registry.memoryDirFor(botSlug)),
+        createEngineMemoryTools(
+          () => core.registry.memoryDirFor(botSlug),
+          () => core.registry.sharedMemoryFor?.(botSlug)?.path,
+        ),
       ),
     'botharness: engine Memory tools',
   );

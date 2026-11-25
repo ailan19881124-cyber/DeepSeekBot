@@ -1,7 +1,7 @@
 import { mkdir, readdir, readFile, realpath, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, relative, sep } from 'node:path';
 
-import { resolveMemoryPath, toMemoryWritePath } from '../memory/jail.js';
+import { resolveMemoryPath, toMemoryRelativePath, toMemoryWritePath } from '../memory/jail.js';
 
 import type { EngineBotTool } from './engine-tools.js';
 
@@ -15,7 +15,24 @@ const MAX_READ = 256 * 1024;
 const MAX_WRITE = 256 * 1024;
 const MAX_LIST = 500;
 
-export function createEngineMemoryTools(memoryDir: () => string | undefined): EngineBotTool[] {
+export function createEngineMemoryTools(
+  memoryDir: () => string | undefined,
+  sharedMemoryDir?: () => string | undefined,
+): EngineBotTool[] {
+  const worklog = 'shared/worklog';
+  const readPath = (base: string, input: string) => {
+    const rel = toMemoryRelativePath(input);
+    if (rel === worklog || rel.startsWith(worklog + '/')) {
+      const shared = sharedMemoryDir?.();
+      if (shared !== undefined)
+        return {
+          path: resolveMemoryPath(shared, rel.slice('shared/'.length)),
+          root: shared,
+          prefix: 'shared/',
+        };
+    }
+    return { path: resolveMemoryPath(base, rel), root: base, prefix: '' };
+  };
   const root = (): string => {
     const dir = memoryDir();
     if (dir === undefined) throw new Error('Memory is unavailable');
@@ -38,8 +55,8 @@ export function createEngineMemoryTools(memoryDir: () => string | undefined): En
         const folder = typeof args['path'] === 'string' ? args['path'].trim() : '';
         const start =
           folder === '' || folder === '.' || folder === './'
-            ? realBase
-            : resolveMemoryPath(base, folder);
+            ? { path: realBase, root: realBase, prefix: '' }
+            : readPath(realBase, folder);
         const files: string[] = [];
         const walk = async (dir: string): Promise<void> => {
           for (const entry of await readdir(dir, { withFileTypes: true })) {
@@ -47,10 +64,12 @@ export function createEngineMemoryTools(memoryDir: () => string | undefined): En
             if (entry.name === '.git') continue;
             const path = join(dir, entry.name);
             if (entry.isDirectory()) await walk(path);
-            else if (entry.isFile()) files.push(relative(realBase, path).split(sep).join('/'));
+            else if (entry.isFile()) {
+              files.push(start.prefix + relative(start.root, path).split(sep).join('/'));
+            }
           }
         };
-        await walk(start);
+        await walk(start.path);
         return JSON.stringify({ files: files.sort(), truncated: files.length >= MAX_LIST });
       },
     },
@@ -65,7 +84,7 @@ export function createEngineMemoryTools(memoryDir: () => string | undefined): En
       },
       run: async (args) => {
         const base = root();
-        const path = resolveMemoryPath(base, String(args['path'] ?? ''));
+        const { path } = readPath(base, String(args['path'] ?? ''));
         const info = await stat(path);
         if (!info.isFile()) throw new Error('path is not a file');
         if (info.size > MAX_READ) throw new Error(`file is larger than ${MAX_READ} bytes`);

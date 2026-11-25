@@ -23,6 +23,8 @@ Existing and new PersonaBots get a `shared/` entry in their memory directory. An
 
 Copies are snapshots of regular files and directories, excluding Git metadata and symlinks. Run `set` again to refresh them. Writes in an assistant's fallback copy stay local and are discarded when the mount is replaced or cleared. The Bot's Git ignore rules exclude `shared`. Clearing removes managed mounts and preserves the shared root and its contents.
 
+The Orchestrator reads `shared/persona/base.md` before its Soul and Core Memory. The shared base is frozen with those sections until compaction. It has a separate 2,000-character default limit. To change it, set `sharedPersonaBaseLimit` to a positive integer in the Host’s `botharness/bot-modes.json`. The prompt points the Orchestrator to `shared/worklog/` for on-demand reads.
+
 ### Reciprocal computer relationships
 
 `relationships cancel <id> --confirm` cancels a proposal only while the owning Host still considers it pending. If a lost sync reply hid activation, it refuses with `relationship-already-active` and leaves the approved relationship and grants intact. The browser uses this condition when cleaning up cancelled enrollment; an unavailable cleanup response never triggers an unconditional retry.

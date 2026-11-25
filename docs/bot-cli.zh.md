@@ -23,6 +23,8 @@ tobs shared-memory clear
 
 副本是普通文件和目录的快照，排除 Git 元数据与符号链接。再次运行 `set` 可以刷新副本。助手写入回退副本的内容只保存在本地，替换或清除挂载时会被丢弃。Bot 的 Git 忽略规则包含 `shared`。清除命令会移除受管理的挂载，并保留共享根目录及其内容。
 
+Orchestrator 会在 Soul 和 Core Memory 之前读取 `shared/persona/base.md`。共享人格基底与这两个部分一起冻结，到 compaction 时刷新。默认独立上限为 2,000 个字符，可在 Host 的 `botharness/bot-modes.json` 中将 `sharedPersonaBaseLimit` 设为正整数。提示词会指向 `shared/worklog/`，供 Orchestrator 按需读取。
+
 ### 电脑双向关系
 
 `relationships cancel <关系ID> --confirm` 仅在所属 Host 仍将关系视为待批准时取消提议。同步回复丢失但关系已激活时，返回 `relationship-already-active`，保留已批准关系及授权。浏览器取消登记时使用相同条件；清理回复不可用时不改为无条件重试。

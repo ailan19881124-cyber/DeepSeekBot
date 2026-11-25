@@ -1,7 +1,9 @@
 import { createTestRegistry } from './registry-fixture.js';
-import { rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { engineInstructions } from '../src/engines/engine-persona.js';
+import { createEngineMemoryTools } from '../src/engines/engine-memory-tools.js';
 import { describe, expect, it } from 'vitest';
 
 import { createMemoryService, type MemoryService } from '../src/index.js';
@@ -13,7 +15,7 @@ function initializeMemory(memoryDir: string) {
   return repository.ok ? { ok: true } : { ok: false, message: repository.code };
 }
 
-function setup(options: { memoryDir?: string } = {}): {
+function setup(options: { memoryDir?: string; sharedRoot?: string } = {}): {
   registry: ReturnType<typeof createTestRegistry>;
   ownership: ReturnType<typeof createTestOwnership>;
   service: MemoryService;
@@ -22,6 +24,8 @@ function setup(options: { memoryDir?: string } = {}): {
   const registry = createTestRegistry({
     rootDir: join(root, 'bots'),
     initializeMemory,
+    sharedMemoryFor: () =>
+      options.sharedRoot === undefined ? undefined : { path: options.sharedRoot, mode: 'symlink' },
   });
   const ownership = createTestOwnership();
   const created = registry.create({
@@ -164,5 +168,73 @@ describe('createMemoryService', () => {
     expect(service.refreshPersonaAfterCompaction('other', 'session-research')).toEqual({
       refreshed: false,
     });
+  });
+});
+
+describe('shared persona base', () => {
+  it('keeps the exact standing prompt when no managed mount or base exists', () => {
+    const root = createTempRoot();
+    for (const sharedRoot of [undefined, root]) {
+      const { registry, service } = setup(sharedRoot === undefined ? {} : { sharedRoot });
+      const memory = registry.memoryDirFor('research')!;
+      mkdirSync(join(memory, 'shared', 'persona'), { recursive: true });
+      writeFileSync(join(memory, 'shared', 'persona', 'base.md'), 'unmanaged base');
+      expect(service.sharedPersonaForEngineSession('session-research')).toBeUndefined();
+      expect(service.personaForSession('session-research')).toBe(
+        service.storeForSession('session-research')!.standingPrompt(),
+      );
+    }
+  });
+
+  it('orders the independently bounded base before Soul and Memory and refreshes it only on compaction', async () => {
+    const sharedRoot = createTempRoot();
+    const { registry, service } = setup({ sharedRoot });
+    const base = join(sharedRoot, 'persona', 'base.md');
+    mkdirSync(join(sharedRoot, 'persona'));
+    mkdirSync(join(sharedRoot, 'worklog'));
+    writeFileSync(join(sharedRoot, 'worklog', 'today.md'), 'private worklog body');
+    writeFileSync(base, '🌱'.repeat(2001));
+    const memory = registry.memoryDirFor('research')!;
+    writeFileSync(join(memory, 'SOUL.md'), 'bot soul');
+    writeFileSync(join(memory, 'MEMORY.md'), 'bot memory');
+
+    const session = 'session-research';
+    const frozen = service.sharedPersonaForEngineSession(session)!;
+    expect(service.personaForSession(session)).toBe(frozen);
+    expect(
+      engineInstructions({ name: 'Research', standingPrompt: frozen, replyDelivery: '' }),
+    ).toContain(frozen);
+    const tools = createEngineMemoryTools(
+      () => memory,
+      () => sharedRoot,
+    );
+    expect(
+      await tools
+        .find(({ name }) => name === 'memory_read')!
+        .run({ path: 'shared/worklog/today.md' }, AbortSignal.timeout(1000)),
+    ).toBe('private worklog body');
+    expect(
+      await tools
+        .find(({ name }) => name === 'memory_list')!
+        .run({ path: './shared/worklog' }, AbortSignal.timeout(1000)),
+    ).toContain('shared/worklog/today.md');
+    expect(frozen).toMatch(/^## Shared Persona Base[\s\S]+## Soul[\s\S]+## Core Memory/u);
+    expect(frozen).toContain('2,001/2,000 chars');
+    expect(frozen).toContain('over its 2,000-character limit');
+    expect([...frozen].filter((character) => character === '🌱')).toHaveLength(2000);
+    expect(frozen).toContain('bot soul');
+    expect(frozen).toContain('bot memory');
+    expect(frozen).toContain('shared/worklog/');
+    expect(frozen).not.toContain('private worklog body');
+
+    writeFileSync(join(registry.rootDir, '..', 'bot-modes.json'), '{"sharedPersonaBaseLimit":4}');
+    writeFileSync(base, 'newer base');
+    expect(service.personaForSession(session)).toBe(frozen);
+    expect(service.personaPending?.(session)).toBe(true);
+    expect(service.refreshPersonaAfterCompaction('research', session)).toEqual({ refreshed: true });
+    const refreshed = service.personaForSession(session);
+    expect(refreshed).toContain('\n\nnewe\n');
+    expect(refreshed).toContain('over its 4-character limit');
+    expect(refreshed).not.toContain('newer base');
   });
 });
