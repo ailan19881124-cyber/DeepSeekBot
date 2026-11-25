@@ -1,3 +1,4 @@
+import { readWorker } from '../../memory/workers.js';
 import type { Agent } from '@deepseek-ai/dsh-agent';
 import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools';
 import type { ChannelSessionLink } from '../../channels/channel.js';
@@ -39,6 +40,7 @@ export interface AssignmentToolOptions {
 }
 
 interface CreateAssignmentToolOptions extends AssignmentToolOptions {
+  workerRoot?: () => string | undefined;
   assignmentGroups:
     | (Partial<Pick<GroupFallback, 'inherited' | 'inheritedEffort'>> & {
         pick(
@@ -185,6 +187,7 @@ export function createAssignmentTool({
   assignmentGroups,
   modeChoices,
   loadAssignmentModes,
+  workerRoot,
 }: CreateAssignmentToolOptions): ToolDefinition {
   return defineTool({
     name: 'create_assignment',
@@ -217,6 +220,11 @@ export function createAssignmentTool({
         type: 'string',
         description:
           'Optional continuity key naming this direction of work; reuse it to continue the same Assignment.',
+      },
+      worker_id: {
+        type: 'string',
+        description:
+          'Optional worker id from workers/<id>.json in your Bot Memory. Its configured model takes precedence over other model choices.',
       },
       provider: {
         type: 'string',
@@ -256,6 +264,18 @@ export function createAssignmentTool({
       const active = currentRun();
       if (active === undefined) {
         throw new Error('create_assignment: Orchestrator run is unavailable');
+      }
+      const worker =
+        args.worker_id === undefined ? undefined : readWorker(workerRoot?.(), args.worker_id);
+      if (worker && worker.model !== 'default') {
+        const {
+          group: _group,
+          engine: _engine,
+          account_id: _accountId,
+          reasoning_effort: _effort,
+          ...request
+        } = args;
+        args = { ...request, ...worker.model };
       }
       if (
         (args.group !== undefined &&
@@ -403,6 +423,9 @@ export function createAssignmentTool({
           description: args.description,
           ...(args.instructions === undefined ? {} : { instructions: args.instructions }),
           grantId,
+          ...(worker === undefined
+            ? {}
+            : { workerId: worker.id, expectedWorkerModel: JSON.stringify(worker.model) }),
           ...(args.key === undefined ? {} : { key: args.key }),
           ...(args.mode === undefined ? {} : { mode: args.mode }),
           ...(picked !== undefined && groupId !== undefined

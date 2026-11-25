@@ -1,6 +1,9 @@
 export const BOT_CREATE_HELP = `tobs: manage your Bots
 
 Usage:
+  tobs worker-list --bot <id>
+  tobs worker-set --bot <id> --file <path>
+  tobs worker-remove --bot <id> --id <worker-id>
   tobs shared-memory status [--home <path> | --host <url>]
   tobs shared-memory set --dir <absolute path> [--home <path> | --host <url>]
   tobs shared-memory clear [--home <path> | --host <url>]

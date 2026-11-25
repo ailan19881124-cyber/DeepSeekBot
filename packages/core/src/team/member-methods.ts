@@ -274,6 +274,7 @@ export const MEMBER_BOT_METHODS = [
   'toolApprovalHistory',
   'botPrompt',
   'botPromptSet',
+  'workerTemplates',
   'botApprovalTemplateSet',
   'computerAccessSet',
   'browserAccessSet',

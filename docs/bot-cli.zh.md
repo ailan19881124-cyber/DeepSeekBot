@@ -25,6 +25,18 @@ tobs shared-memory clear
 
 Orchestrator 会在 Soul 和 Core Memory 之前读取 `shared/persona/base.md`。共享人格基底与这两个部分一起冻结，到 compaction 时刷新。默认独立上限为 2,000 个字符，可在 Host 的 `botharness/bot-modes.json` 中将 `sharedPersonaBaseLimit` 设为正整数。提示词会指向 `shared/worklog/`，供 Orchestrator 按需读取。
 
+### Assignment worker 模板
+
+```sh
+tobs worker-list --bot <id>
+tobs worker-set --bot <id> --file <worker.json-or-md>
+tobs worker-remove --bot <id> --id <worker-id>
+```
+
+模板保存在 Bot 的 Git 记忆工作树 `workers/<id>.json`。`worker-set` 接受 JSON，或接受带 YAML front matter 的 Markdown。字段包括 `id`、`name`、`persona`、`model`（`"default"` 或 `{"provider":"…","model":"…"}`）和可选的 `skills`（Bot 的 `.agents/skills` 中的名称）。Markdown 正文作为 `persona`，其他字段放在 front matter 中。用 Git 提交模板文件即可记录变更。
+
+在 `create_assignment` 中传入 `worker_id` 可为新 Assignment 选用模板。worker 指定的模型优先，并须在该 Bot 允许的模型范围内。`"default"` 沿用常规 Assignment 选模。Assignment 会保存一份 worker 人格快照，技能名称只作为提示。要在同一工作方向换用 worker，请使用新的 continuity key。
+
 ### 电脑双向关系
 
 `relationships cancel <关系ID> --confirm` 仅在所属 Host 仍将关系视为待批准时取消提议。同步回复丢失但关系已激活时，返回 `relationship-already-active`，保留已批准关系及授权。浏览器取消登记时使用相同条件；清理回复不可用时不改为无条件重试。

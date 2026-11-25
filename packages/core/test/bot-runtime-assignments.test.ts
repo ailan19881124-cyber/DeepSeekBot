@@ -1,3 +1,6 @@
+import { mkdirSync } from 'node:fs';
+import { setWorker } from '../src/memory/workers.js';
+import { createSessionOwnership } from '../src/sessions/ownership.js';
 import { join } from 'node:path';
 
 import { describe, expect, it } from 'vitest';
@@ -105,6 +108,16 @@ describe('Bot runtime tracer bullet', () => {
     const home = createTempRoot('botharness-assignment-model-');
     const registry = createTestRegistry({ rootDir: join(home, 'bots'), now: FIXED_NOW });
     registry.create({ slug: 'ada', displayName: 'Ada' });
+    const memory = registry.memoryDirFor('ada')!;
+    mkdirSync(memory, { recursive: true });
+    const worker = {
+      id: 'review',
+      name: 'Reviewer',
+      persona: 'Find regressions first.',
+      model: { provider: 'deepseek', model: 'flash' },
+      skills: ['triage'],
+    };
+    setWorker(memory, worker);
     const pro = { provider: 'deepseek', model: 'pro', reasoningEffort: 'off' };
     registry.applyModelPreset('ada', {
       id: 'preset',
@@ -132,6 +145,7 @@ describe('Bot runtime tracer bullet', () => {
       body: 'Delegate',
     });
     const owner = mountOperationalDatabase({ dshHome: home, schemaPlan: BOT_HARNESS_SCHEMA_PLAN });
+    const ownership = createSessionOwnership(attachOperationalModule(owner, 'session-ownership'));
     const selections: string[] = [];
     const resumedRoutes: Array<
       { provider: string; model: string; reasoningEffort?: string } | undefined
@@ -146,19 +160,24 @@ describe('Bot runtime tracer bullet', () => {
         runOrchestrator: async (run) => {
           if (run.message === '') return;
           assignmentAccess = run.assignments;
-          const create = (model?: { provider: string; model: string; reasoningEffort?: string }) =>
+          const create = (
+            model?: { provider: string; model: string; reasoningEffort?: string },
+            workerId?: string,
+          ) =>
             run.assignments.create({
               title: 'Assignment',
               description: 'Inspect',
               grantId: TEST_GRANT_ID,
+              ...(workerId === undefined ? {} : { workerId }),
               ...(model === undefined ? {} : { model }),
             });
           expect(() =>
             create({ provider: 'deepseek', model: 'pro', reasoningEffort: 'high' }),
           ).toThrow(/not allowed/);
           expect(() => create({ provider: 'other', model: 'flash' })).toThrow(/not allowed/);
+          expect(() => create(undefined, 'unknown')).toThrow(/Unknown worker/);
           expect(create().outcome).toBe('created');
-          expect(create({ provider: 'deepseek', model: 'flash' }).outcome).toBe('created');
+          expect(create({ provider: 'deepseek', model: 'pro' }, 'review').outcome).toBe('created');
           expect(
             create({ provider: 'deepseek', model: 'flash', reasoningEffort: 'high' }).outcome,
           ).toBe('created');
@@ -198,6 +217,15 @@ describe('Bot runtime tracer bullet', () => {
     });
     await admit(runtime, { channelId: dm.id, messageId: 'human-1', body: 'Delegate' });
     await runtime.whenIdle();
+    expect(ownership.workerPrompt('assignment-default')).toBeUndefined();
+    const prompt = ownership.workerPrompt('assignment-low');
+    expect(prompt).toContain('Find regressions first.');
+    expect(prompt).toContain('Suggested Bot Memory skills: triage.');
+    setWorker(memory, { ...worker, persona: 'Changed later.' });
+    ownership.writePromptSnapshot('assignment-low', '{}', false);
+    ownership.writePromptSnapshot('assignment-low', '{"assignment":"new"}', true);
+    expect(ownership.workerPrompt('assignment-low')).toBe(prompt);
+    expect(ownership.promptSnapshot('assignment-low')).toBe('{"assignment":"new"}');
     expect(selections).toEqual([
       'deepseek/pro/off',
       'deepseek/flash/low',

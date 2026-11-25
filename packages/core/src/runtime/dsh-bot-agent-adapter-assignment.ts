@@ -1,3 +1,4 @@
+import { appendWorkerPrompt } from '../memory/workers.js';
 import { installMemorySkillProvider } from '../skills/memory-provider.js';
 import { TeamError } from '../team/error.js';
 import {
@@ -99,6 +100,7 @@ type AssignmentHandleContext = Pick<
   | 'assignmentReportFooter'
   | 'orchestratorCwd'
   | 'promptText'
+  | 'workerPrompt'
   | 'resolveModelPlan'
   | 'runs'
 > &
@@ -465,11 +467,14 @@ async function assignmentHandle(
         name: 'botharness:assignment-role',
         order: ROLE_PROMPT_ORDER,
         text: () =>
-          appendSkillInstallation(
-            run.permission.mode === 'danger-full-access'
-              ? DANGER_ASSIGNMENT_PROMPT
-              : ASSIGNMENT_PROMPT,
-            adapter.promptText(run.sessionId),
+          appendWorkerPrompt(
+            appendSkillInstallation(
+              run.permission.mode === 'danger-full-access'
+                ? DANGER_ASSIGNMENT_PROMPT
+                : ASSIGNMENT_PROMPT,
+              adapter.promptText(run.sessionId),
+            ),
+            adapter.workerPrompt?.(run.sessionId),
           ),
       });
       if (borrowed) borrowedDisposers.push(disposeRolePrompt);

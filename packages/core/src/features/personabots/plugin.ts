@@ -608,6 +608,7 @@ export function createHostAgentAdapter(
     agents: ctx.agents,
     releaseNativeAgent: (agent) => ctx.get('agentLoop')?.releaseIdleAgent?.(agent),
     promptText: (sessionId) => deps.core.prompts.textForSession(sessionId),
+    workerPrompt: (sessionId) => deps.core.ownership.workerPrompt(sessionId),
     defaultModel,
     observeTurnFailure: (provider, code) => providerCredentials.observe(provider, code),
     observeDirectToolCleanupFailure: ({ sessionId, durationMs }) =>

@@ -44,6 +44,7 @@ import type { SessionOwnership } from '../../sessions/ownership.js';
 import { TeamError } from '../../team/error.js';
 import type { AssignmentAccessStore } from '../../workspaces/assignment-access.js';
 import type { AssignmentPermissionSnapshot, WorkspaceGrantStore } from '../../workspaces/grants.js';
+import { readWorker, renderWorkerPrompt } from '../../memory/workers.js';
 import type { createAssignmentDelivery } from './delivery.js';
 import type { AssignmentRow } from './events-types.js';
 import type { createAssignmentReporting } from './reporting.js';
@@ -149,6 +150,8 @@ export function createAssignmentIntake(ports: AssignmentIntakePorts) {
       routingTarget?: RoutingTarget;
       modelGroupEffort?: string;
       mode?: string;
+      workerId?: string;
+      expectedWorkerModel?: string;
     },
     trackDelivery?: (sessionId: string, pending: boolean) => void,
   ): AssignmentCreateOutcome {
@@ -166,6 +169,26 @@ export function createAssignmentIntake(ports: AssignmentIntakePorts) {
     const grantId = requireNonBlank(input.grantId, 'Workspace Grant id');
     if (ports.registry.get(bot.slug) === undefined) throw new Error('PersonaBot is deleted');
     const current = ports.registry.get(bot.slug) ?? bot;
+    const worker =
+      input.workerId === undefined
+        ? undefined
+        : readWorker(ports.registry.memoryDirFor(bot.slug), input.workerId);
+    if (
+      input.expectedWorkerModel !== undefined &&
+      input.expectedWorkerModel !== JSON.stringify(worker?.model)
+    )
+      throw new Error('Worker model changed while preparing the Assignment; retry.');
+    if (worker && worker.model !== 'default') {
+      const {
+        engine: _engine,
+        engineEffort: _engineEffort,
+        modelGroupId: _modelGroupId,
+        modelGroupEffort: _modelGroupEffort,
+        routingTarget: _routingTarget,
+        ...request
+      } = input;
+      input = { ...request, model: worker.model };
+    }
     const plan = resolveBotModelPlan(current, () => ports.inheritedModelPlan?.());
     if (input.model !== undefined && !isAssignmentModelChoice(input.model))
       throw new Error('Assignment model choice is invalid');
@@ -218,6 +241,10 @@ export function createAssignmentIntake(ports: AssignmentIntakePorts) {
         (holder.activity === 'idle' || holder.activity === 'error') &&
         holder.stop_state === 'running'
       ) {
+        if (worker)
+          throw new Error(
+            'An existing keyed Assignment keeps its worker; use a new key to choose one',
+          );
         if (
           input.model !== undefined ||
           input.routingTarget !== undefined ||
@@ -331,6 +358,8 @@ export function createAssignmentIntake(ports: AssignmentIntakePorts) {
           ...(cwdReference === undefined ? {} : { cwdReference }),
           at: createdAt,
         });
+        if (worker)
+          ports.ownership.recordWorkerPromptWithin(database, sessionId, renderWorkerPrompt(worker));
         const sourceHuman = database
           .prepare('SELECT human_id FROM source_events WHERE source_event_id = ?')
           .get(sourceEventId);

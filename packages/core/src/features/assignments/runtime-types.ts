@@ -136,6 +136,8 @@ export interface OrchestratorAssignmentAccess {
     routingTarget?: RoutingTarget;
     modelGroupEffort?: string;
     mode?: string;
+    workerId?: string;
+    expectedWorkerModel?: string;
   }): AssignmentCreateOutcome;
   refreshRoute?(sessionId: string): Promise<unknown>;
   grants(): WorkspaceGrant[];

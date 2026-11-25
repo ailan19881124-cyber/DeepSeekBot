@@ -169,3 +169,28 @@ it('attributes an Assignment failure to the request provider before a steer chan
     await adapter.close();
   }
 });
+
+it('appends the worker persona only to the selected Assignment system prompt', async () => {
+  const host = new FakeAgentHost();
+  const adapter = setup({
+    agents: host,
+    workerPrompt: (sessionId) =>
+      sessionId === 'worker-session'
+        ? '## Assignment worker: Reviewer\n\nFind regressions first.'
+        : undefined,
+  });
+  try {
+    await adapter.runAssignment(assignment());
+    await adapter.runAssignment({ ...assignment(), sessionId: 'worker-session' });
+    const prompt = (id: string) =>
+      host.scopes.get(id)?.sections.find((section) => section.name === 'botharness:assignment-role')
+        ?.text;
+    const baseline = prompt('assignment-1');
+    expect(baseline).toBeTruthy();
+    expect(prompt('worker-session')).toBe(
+      baseline + '\n\n## Assignment worker: Reviewer\n\nFind regressions first.',
+    );
+  } finally {
+    await adapter.close();
+  }
+});

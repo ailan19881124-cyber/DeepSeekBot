@@ -942,3 +942,31 @@ it('routes shared-memory status, set and clear to the authenticated Host', async
     { method: 'sharedMemory', args: { action: 'clear' } },
   ]);
 });
+
+it('sends worker template operations and local Markdown contents to the authenticated Host', async () => {
+  const remote = await host((method) => {
+    expect(method).toBe('workerTemplates');
+    return { ok: true, value: {} };
+  });
+  const root = mkdtempSync(join(tmpdir(), 'worker-cli-live-'));
+  directories.push(root);
+  const file = join(root, 'review.md');
+  writeFileSync(file, '---\nid: review\nname: Review\nmodel: default\n---\nReview changes.\n');
+  expect((await invoke(['worker-list', '--bot', 'ada'], remote.url)).code).toBe(0);
+  expect((await invoke(['worker-set', '--bot', 'ada', '--file', file], remote.url)).code).toBe(0);
+  expect((await invoke(['worker-remove', '--bot', 'ada', '--id', 'review'], remote.url)).code).toBe(
+    0,
+  );
+  expect(remote.calls).toEqual([
+    { method: 'workerTemplates', args: { action: 'list', bot: 'ada' } },
+    {
+      method: 'workerTemplates',
+      args: {
+        action: 'set',
+        bot: 'ada',
+        value: { id: 'review', name: 'Review', model: 'default', persona: 'Review changes.' },
+      },
+    },
+    { method: 'workerTemplates', args: { action: 'remove', bot: 'ada', value: 'review' } },
+  ]);
+});

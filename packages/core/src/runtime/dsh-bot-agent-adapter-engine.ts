@@ -1,3 +1,4 @@
+import { appendWorkerPrompt } from '../memory/workers.js';
 import { randomUUID } from 'node:crypto';
 import { ENGINE_REPORT_TOOL, isReportState } from '../features/assignments/tools.js';
 import { ASSIGNMENT_REPORT_CONTRACT } from '../features/assignments/prompt.js';
@@ -63,7 +64,7 @@ type EngineToolCatalogContext = EngineCatalogContext;
 
 type RunEngineAssignmentContext = Pick<
   DshBotAgentAdapterState,
-  'engineStops' | 'engineWorkspaceMode' | 'runs' | 'stoppedBots' | 'stopping'
+  'engineStops' | 'engineWorkspaceMode' | 'runs' | 'stoppedBots' | 'stopping' | 'workerPrompt'
 > &
   ReleaseNativeSessionContext;
 
@@ -354,14 +355,17 @@ export async function runEngineAssignment(
                 },
               ];
         },
-        instructions: [
-          ASSIGNMENT_REPORT_CONTRACT,
-          engineAssignmentInstructions({
-            name: run.bot.displayName,
-            cwd: run.permission.primaryCwd,
-            fullAccess: run.permission.mode === 'danger-full-access',
-          }),
-        ].join('\n\n'),
+        instructions: appendWorkerPrompt(
+          [
+            ASSIGNMENT_REPORT_CONTRACT,
+            engineAssignmentInstructions({
+              name: run.bot.displayName,
+              cwd: run.permission.primaryCwd,
+              fullAccess: run.permission.mode === 'danger-full-access',
+            }),
+          ].join('\n\n'),
+          adapter.workerPrompt?.(run.sessionId),
+        ),
         tools: [ENGINE_REPORT_TOOL],
         execute: async (name, args, signal, context) => {
           if (name !== ENGINE_REPORT_TOOL.name)

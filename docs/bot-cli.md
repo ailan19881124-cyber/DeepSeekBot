@@ -25,6 +25,18 @@ Copies are snapshots of regular files and directories, excluding Git metadata an
 
 The Orchestrator reads `shared/persona/base.md` before its Soul and Core Memory. The shared base is frozen with those sections until compaction. It has a separate 2,000-character default limit. To change it, set `sharedPersonaBaseLimit` to a positive integer in the Host’s `botharness/bot-modes.json`. The prompt points the Orchestrator to `shared/worklog/` for on-demand reads.
 
+### Assignment workers
+
+```sh
+tobs worker-list --bot <id>
+tobs worker-set --bot <id> --file <worker.json-or-md>
+tobs worker-remove --bot <id> --id <worker-id>
+```
+
+Worker templates live in `workers/<id>.json` in the Bot's Git-backed Memory working tree. `worker-set` accepts a JSON object or a Markdown file with YAML front matter and the persona as its body. Supply `id`, `name`, `persona`, `model` (either `"default"` or `{"provider":"…","model":"…"}`), and optional `skills` (skill names from the Bot's `.agents/skills`). Markdown puts all fields except `persona` in front matter. Commit the worker files with Git to record changes.
+
+Pass `worker_id` to `create_assignment` to use a template for a new Assignment. An explicit worker model takes precedence and must be allowed for the Bot. With `"default"`, normal Assignment model selection applies. The Assignment keeps a snapshot of the worker persona, with skills listed as suggestions. Use a new continuity key to choose a different worker.
+
 ### Reciprocal computer relationships
 
 `relationships cancel <id> --confirm` cancels a proposal only while the owning Host still considers it pending. If a lost sync reply hid activation, it refuses with `relationship-already-active` and leaves the approved relationship and grants intact. The browser uses this condition when cleaning up cancelled enrollment; an unavailable cleanup response never triggers an unconditional retry.

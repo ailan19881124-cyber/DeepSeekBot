@@ -57,6 +57,7 @@ type OrchestratorToolsContext = Pick<
   | 'onGenuiDiagnostic'
   | 'openAssignmentRoutes'
   | 'orchestratorModeChoices'
+  | 'orchestratorCwd'
   | 'resolveModelPlan'
   | 'runs'
 >;
@@ -163,6 +164,7 @@ export function orchestratorTools(
     createAssignmentTool({
       ...assignmentOptions,
       assignmentGroups: adapter.assignmentGroups,
+      workerRoot: () => adapter.orchestratorCwd?.(run.bot),
       modeChoices: adapter.orchestratorModeChoices.get(run.sessionId),
       loadAssignmentModes,
     }),

@@ -99,6 +99,8 @@ export interface SessionOwnership {
 
   refreshPersonaSnapshot(sessionId: string, body: string, at: string): SessionPersonaSnapshot;
 
+  workerPrompt(sessionId: string): string | undefined;
+  recordWorkerPromptWithin(connection: DatabaseSync, sessionId: string, workerPrompt: string): void;
   promptSnapshot(sessionId: string): string | undefined;
 
   writePromptSnapshot(sessionId: string, body: string, replace: boolean): string;
@@ -142,6 +144,21 @@ function readRow(connection: DatabaseSync, sessionId: string): OwnershipRow | un
 interface PersonaSnapshotRow {
   persona_snapshot: string | null;
   persona_snapshot_at: string | null;
+}
+
+function readPromptSnapshot(connection: DatabaseSync, sessionId: string) {
+  const row = connection
+    .prepare('SELECT prompt_snapshot FROM session_ownership WHERE session_id = ?')
+    .get(sessionId) as { prompt_snapshot: string | null } | undefined;
+  const raw = row?.prompt_snapshot ?? undefined;
+  if (raw?.startsWith('{"workerPrompt":')) {
+    try {
+      const { workerPrompt, body } = JSON.parse(raw) as { workerPrompt?: unknown; body?: unknown };
+      if (typeof workerPrompt === 'string')
+        return { workerPrompt, body: typeof body === 'string' ? body : undefined };
+    } catch {}
+  }
+  return { workerPrompt: undefined, body: raw };
 }
 
 function readPersonaSnapshot(
@@ -438,15 +455,18 @@ export function createSessionOwnership(database: OperationalDatabaseModulePort):
     repairRevision(sessionId) {
       return repairRevisions.get(sessionId) ?? 0;
     },
+    workerPrompt(sessionId) {
+      return database.read((connection) => readPromptSnapshot(connection, sessionId).workerPrompt);
+    },
+    recordWorkerPromptWithin(connection, sessionId, workerPrompt) {
+      connection
+        .prepare(
+          'UPDATE session_ownership SET prompt_snapshot = ? WHERE session_id = ? AND prompt_snapshot IS NULL',
+        )
+        .run(JSON.stringify({ workerPrompt }), sessionId);
+    },
     promptSnapshot(sessionId) {
-      return database.read(
-        (connection) =>
-          (
-            connection
-              .prepare('SELECT prompt_snapshot FROM session_ownership WHERE session_id = ?')
-              .get(sessionId) as { prompt_snapshot: string | null } | undefined
-          )?.prompt_snapshot ?? undefined,
-      );
+      return database.read((connection) => readPromptSnapshot(connection, sessionId).body);
     },
     writePromptSnapshot(sessionId, body, replace) {
       try {
@@ -455,20 +475,16 @@ export function createSessionOwnership(database: OperationalDatabaseModulePort):
             if (readRow(connection, sessionId) === undefined) {
               throw new SessionOwnershipError(`Unknown Session ownership: ${sessionId}`);
             }
+            const current = readPromptSnapshot(connection, sessionId);
+            if (!replace && current.body !== undefined) return current.body;
+            const stored =
+              current.workerPrompt === undefined
+                ? body
+                : JSON.stringify({ workerPrompt: current.workerPrompt, body });
             connection
-              .prepare(
-                replace
-                  ? 'UPDATE session_ownership SET prompt_snapshot = ? WHERE session_id = ?'
-                  : 'UPDATE session_ownership SET prompt_snapshot = ? WHERE session_id = ? AND prompt_snapshot IS NULL',
-              )
-              .run(body, sessionId);
-            const row = connection
-              .prepare('SELECT prompt_snapshot FROM session_ownership WHERE session_id = ?')
-              .get(sessionId) as { prompt_snapshot: string | null } | undefined;
-            if (row?.prompt_snapshot == null) {
-              throw new Error(`Prompt snapshot write failed: ${sessionId}`);
-            }
-            return row.prompt_snapshot;
+              .prepare('UPDATE session_ownership SET prompt_snapshot = ? WHERE session_id = ?')
+              .run(stored, sessionId);
+            return body;
           },
           ['session-ownership'],
         );
