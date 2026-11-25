@@ -51,7 +51,7 @@ export function runShow(
   id: string,
   values: CreateValues,
   io: BotCreateCliIo,
-): BotCreateResult | BotMetadataResult {
+): BotCreateResult | (BotMetadataResult & { bot: { kind: 'assistant' | 'bot' } }) {
   const slug = id.trim();
   if (slug.length === 0) throw usageError('show needs a bot id.');
   const dshHome = resolveHome(values, io);
@@ -62,10 +62,14 @@ export function runShow(
       throw new CliFailure('unknown-bot', `Unknown bot: ${slug}`, 1);
     }
     const human = new TeamRoles(attachOperationalModule(owner, 'team'), () => {}).ownerContext();
-    if (!ownsBot(human, record)) return { metadataOnly: true, bot: botMetadata(human, record) };
+    if (!ownsBot(human, record))
+      return {
+        metadataOnly: true,
+        bot: { ...botMetadata(human, record), kind: record.kind ?? 'bot' },
+      };
     const channelId = dmChannelId(slug);
     return {
-      bot: { id: slug, name: record.displayName },
+      bot: { id: slug, name: record.displayName, kind: record.kind ?? 'bot' },
       dm: { channelId },
       dataDir: registry.memoryDirFor(slug) ?? join(dshHome, 'botharness', 'bots', slug, 'memory'),
       steps: [{ name: 'show', status: 'ok' }],

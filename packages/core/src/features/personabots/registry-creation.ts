@@ -5,6 +5,7 @@ import { restoreBotHistory, writeBotFiles } from '../../bots/bot-zip.js';
 import { recordMemoryOwnership } from '../../bots/deletion.js';
 import {
   isPersonaBotAvatar,
+  isPersonaBotKind,
   type CreatePersonaBotInput,
   type CreatePersonaBotResult,
   type PersonaBotRecord,
@@ -74,6 +75,8 @@ export function createRegistryCreationMethods(
     sync: boolean,
     standingLimits?: StandingLimits,
   ): Generator<Preparation, CreatePersonaBotResult, MemoryRepositoryInitialization> {
+    if (input.kind !== undefined && !isPersonaBotKind(input.kind))
+      return { ok: false, reason: 'invalid-input', detail: 'kind must be assistant or bot' };
     if (!isValidSlug(input.slug)) return { ok: false, reason: 'invalid-slug' };
     if (read(input.slug) !== undefined) return { ok: false, reason: 'duplicate' };
 
@@ -114,6 +117,7 @@ export function createRegistryCreationMethods(
       approvalTemplate: '@global',
       ownerHumanId: input.ownerHumanId ?? 'local-human',
       slug: input.slug,
+      kind: input.kind ?? 'bot',
       displayName: displayName.length > 0 ? displayName : input.slug,
       workspaces: input.workspaces ?? [],
       createdAt: now().toISOString(),
@@ -213,6 +217,8 @@ export function createRegistryCreationMethods(
     ) => Promise<Extract<CreatePersonaBotResult, { ok: false }>['reason'] | undefined>,
     authorize?: () => void,
   ): Promise<CreatePersonaBotResult> => {
+    if (input.kind !== undefined && !isPersonaBotKind(input.kind))
+      return { ok: false, reason: 'invalid-input', detail: 'kind must be assistant or bot' };
     if (!isValidSlug(input.slug)) return { ok: false, reason: 'invalid-slug' };
     if (read(input.slug) !== undefined || existsSync(botDir(input.slug))) {
       return { ok: false, reason: 'duplicate' };

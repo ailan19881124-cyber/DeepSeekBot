@@ -47,6 +47,7 @@ export interface StandingLimitsView {
 export type BotBannerView = { recipe: PixelBannerRecipe } | { image: string };
 
 export interface BotSummary {
+  kind?: 'assistant' | 'bot';
   orchestratorRunner?: OrchestratorRunner;
   sharedBy?: string;
   lastActivityAt?: number;

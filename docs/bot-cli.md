@@ -88,7 +88,7 @@ Notifications → Delivery on the phone chooses **Push**, **In app only** or **O
 `deepseekbot device-activity capability --device-file <private-pairing.json>` checks this Computer's configured Lock Screen service. `prepare`, `register` and `stop` use `--activity-stdin`: prepare receives `channelId`, `messageId`, `bundleIdentifier`; register also receives the actual iOS `clientActivityId`, per-activity `token` and `locale` (`en`/`zh`); stop receives only `clientActivityId`. `status` also receives only `clientActivityId` and reads that device's own registration, even after it ended: it returns the request's `channelId`, `messageId`, `progress` and, when the request created or advanced an Assignment, its `assignmentId` (the Assignment Session id the phone opens at `bot/[slug]/assignment/[id]`); `prepare` and `register` carry the same `assignmentId` when it is already known. Device identity always comes from the saved pairing, never stdin. A token is secret: pipe it privately, never put it in arguments or publish it. The CLI invokes the same authenticated/encrypted Device routes as the phone and prints only a JSON result or coded refusal. `activity-provider-unconfigured`, `activity-app-unsupported`, `activity-ended` and `device-revoked` refuse unavailable or stale operations. `activity-cleanup-pending` reports a temporary stop failure; only cleanup is retried until acknowledgement or registration expiry. Stopping display never stops the underlying request. `send-status <bot> --message-id <id>` now includes `progress` with explicit Inbox resolution; a handled turn is not completion. It also includes `assignmentId` when the request created or advanced an Assignment (the latest one wins). CLI tests cover these contracts; the live Host and real iPhone remote-delivery run remain separate QA gates. See [ADR-0255](decisions/mobile.md#adr-0255).
 
 ```bash
-deepseekbot create --name <name> [--persona <text> | --persona-stdin]
+deepseekbot create --name <name> [--kind assistant|bot] [--persona <text> | --persona-stdin]
                    [--core-memory <text> | --core-memory-stdin]
                    [--description <text>] [--role <tag> ...] [--avatar-file <image>]
                    [--preset <model-preset-id>] [--memory-location <absolute-dir>]
@@ -128,6 +128,8 @@ deepseekbot schedule-preview (--every <s> | --daily ... | ...) [--home <dsh-home
 deepseekbot pairings <id> [--home <dsh-home>]
 deepseekbot search <words>
 ```
+
+Use `--kind assistant` to label the new PersonaBot as an Assistant. The default is `bot`, including for older records. `deepseekbot show <id>` reports the kind in `bot.kind`.
 
 Exactly one source per create. `--name` is required for blank and GitHub bots; for bundle imports it overrides the name from `.botharness/bot.json` (or the file name). A `--from-git` value accepts a full Git URL (`https://`, `ssh://`, `git@host:path`) or an `owner/repo` shorthand for `https://github.com/owner/repo.git`, which also covers Bot Marketplace entries through their clone URL. A `--from-dir` bundle skips `.git` as files but packs it as history when present.
 

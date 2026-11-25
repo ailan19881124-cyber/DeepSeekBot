@@ -78,8 +78,16 @@ export function createMarketplaceBridge({
     return fallback;
   }
 
-  async function importBotZip(file: File, signal?: AbortSignal): Promise<BotSummary> {
-    const response = await fetch(botZipUrl('bot-zip/import', { name: file.name }), {
+  async function importBotZip(
+    file: File,
+    signal?: AbortSignal,
+    kind?: BotSummary['kind'],
+  ): Promise<BotSummary> {
+    const url = botZipUrl('bot-zip/import', {
+      name: file.name,
+      ...(kind === 'assistant' ? { kind } : {}),
+    });
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'content-type': 'application/zip' },
       body: file,

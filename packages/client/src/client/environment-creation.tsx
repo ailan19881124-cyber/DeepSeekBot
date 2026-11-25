@@ -28,7 +28,12 @@ import {
 } from './environment-creation-target.js';
 
 export type EnvironmentCreateRequest =
-  | { kind: 'bot'; source: 'empty' | 'git'; sectionId?: string }
+  | {
+      kind: 'bot';
+      source: 'empty' | 'git';
+      botKind?: 'assistant' | 'bot' | undefined;
+      sectionId?: string;
+    }
   | { kind: 'channel'; sectionId?: string }
   | { kind: 'human-dm' };
 
@@ -67,6 +72,7 @@ export function EnvironmentCreation(
       onBack={onBack}
       actions={actions}
       source={request.source}
+      botKind={request.botKind}
       {...(request.sectionId === undefined ? {} : { sectionId: request.sectionId })}
       {...(sectionName === undefined ? {} : { sectionName })}
       t={t}
@@ -390,6 +396,7 @@ function OwnerEnvironmentCreation({
         openCreatedBot: (bot, sectionId) => continuation.current(bot, sectionId),
       }}
       source={request.source}
+      botKind={request.botKind}
       {...(request.sectionId === undefined ? {} : { sectionId: request.sectionId })}
       {...(sectionName === undefined ? {} : { sectionName })}
       t={t}

@@ -88,7 +88,7 @@ Client 线路偏好检查或文件替换失败时，Host 线路可能已经更�
 `deepseekbot device-activity capability --device-file <私有配对.json>` 检查此电脑的锁屏状态服务。`prepare`、`register`、`stop` 通过 `--activity-stdin` 接收 JSON：prepare 需要 `channelId`、`messageId`、`bundleIdentifier`；register 另需 iOS 实际生成的 `clientActivityId`、每项活动的 `token` 和 `locale`（`en`/`zh`）；stop 只需 `clientActivityId`。`status` 同样只需 `clientActivityId`，读取本设备自己的登记（活动结束后也可读）：返回请求的 `channelId`、`messageId`、`progress`；若该请求创建或推进了某个任务（Assignment），另含 `assignmentId`（即 Assignment Session id，手机据此打开 `bot/[slug]/assignment/[id]`）；`prepare`、`register` 在已知时也带同一 `assignmentId`。设备身份来自配对凭据，不能由输入指定。token 属于秘密，只能私下传入标准输入，不能放在参数或公开文件中。命令调用与手机相同的鉴权/加密路由，只输出一个 JSON 结果或拒绝码；未配置、不支持、已结束或撤销配对会明确拒绝。停止显示不会停止原请求。`activity-cleanup-pending` 表示停止投递尚未确认；Host 只重试清理，到确认或登记到期为止。`send-status <bot> --message-id <id>` 新增 `progress`，仅显式 Inbox 解决事实表示完成，单轮处理结束不算完成；若该请求创建或推进了任务，另含 `assignmentId`（以最近一次为准）。CLI 源码测试与真实 Host、iPhone 后台送达仍是独立验收项，参见 [ADR-0255](decisions/mobile.md#adr-0255)。
 
 ```bash
-deepseekbot create --name <name> [--persona <text> | --persona-stdin]
+deepseekbot create --name <name> [--kind assistant|bot] [--persona <text> | --persona-stdin]
                    [--core-memory <text> | --core-memory-stdin]
                    [--description <text>] [--role <tag> ...] [--avatar-file <image>]
                    [--preset <model-preset-id>] [--memory-location <absolute-dir>]
@@ -128,6 +128,8 @@ deepseekbot schedule-preview (--every <s> | --daily ... | ...) [--home <dsh-home
 deepseekbot pairings <id> [--home <dsh-home>]
 deepseekbot search <words>
 ```
+
+使用 `--kind assistant` 将新建的 PersonaBot 标记为助理级。缺省值和旧记录均为 `bot`。`deepseekbot show <id>` 在 `bot.kind` 中返回该标记。
 
 每次创建只能指定一种来源。空白创建和 GitHub 导入必须传 `--name`；包导入时 `--name` 会覆盖 `.botharness/bot.json`（或文件名）中的名字。`--from-git` 接受完整 Git 地址（`https://`、`ssh://`、`git@host:path`）或 `owner/repo` 简写（即 `https://github.com/owner/repo.git`），Bot 市场条目可用其克隆地址走同一路径。`--from-dir` 会跳过 `.git` 下的文件，但存在时将其打包为历史记录。
 

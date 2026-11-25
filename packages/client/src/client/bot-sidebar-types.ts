@@ -65,8 +65,13 @@ export interface PinDragState {
 }
 
 export type CreateRequest =
-  | { kind: 'bot-source'; sectionId?: string }
-  | { kind: 'bot'; source: 'empty' | 'git' | 'zip'; sectionId?: string }
+  | { kind: 'bot-source'; botKind?: 'assistant' | 'bot' | undefined; sectionId?: string }
+  | {
+      kind: 'bot';
+      source: 'empty' | 'git' | 'zip';
+      botKind?: 'assistant' | 'bot' | undefined;
+      sectionId?: string;
+    }
   | {
       kind: 'section';
       moveChannelId?: string;

@@ -3,7 +3,7 @@ export const BOT_CREATE_HELP = `tobs: manage your Bots
 Usage:
   tobs ssh-tunnel <alias> --pairing-file <private-file> --out <new-private-file>
     --local-port <port> --remote-port <port> [--ssh-config <absolute-file>]
-  tobs create --name <name> [--persona <text> | --persona-stdin]
+  tobs create --name <name> [--kind assistant|bot] [--persona <text> | --persona-stdin]
                     [--core-memory <text> | --core-memory-stdin]
                     [--description <text>] [--role <tag> ...] [--avatar-file <image>]
                     [--preset <model-preset-id>] [--memory-location <absolute-dir>]

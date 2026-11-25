@@ -121,6 +121,7 @@ export function tobBotProfileView(record: PersonaBotRecord) {
   return {
     slug: record.slug,
     displayName: record.displayName,
+    kind: record.kind ?? 'bot',
     description: record.description ?? '',
     roles: record.roles ?? [],
     paused: record.paused === true,

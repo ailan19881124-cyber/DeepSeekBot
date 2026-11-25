@@ -187,6 +187,7 @@ export async function connectLiveHost(values: LiveValues, io: BotCreateCliIo, si
     metadata: {
       name?: string;
       displayName?: string;
+      kind?: 'assistant' | 'bot';
       roles?: string[];
       description?: string;
     },
@@ -194,7 +195,7 @@ export async function connectLiveHost(values: LiveValues, io: BotCreateCliIo, si
     if (values.as !== undefined)
       throw new CliLiveError('as-command-unsupported', 'as-command-unsupported');
     const url = new URL('/api/botharness/bot-zip/import', base);
-    for (const key of ['name', 'displayName', 'description'] as const) {
+    for (const key of ['name', 'displayName', 'description', 'kind'] as const) {
       if (metadata[key] !== undefined) url.searchParams.set(key, metadata[key]);
     }
     if (metadata.roles !== undefined) url.searchParams.set('roles', JSON.stringify(metadata.roles));

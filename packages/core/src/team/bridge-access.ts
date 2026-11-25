@@ -51,7 +51,16 @@ export function guardHumanBridge(
     if (human.caller === 'bot')
       return refuse('permission-required', { permission: 'privateContent.view' });
     if (BOT_ADMIN_READS.has(method) && method !== 'deletionPreview') {
-      const metadata = { ok: true, value: { metadataOnly: true, bot: botMetadata(human, bot) } };
+      const metadata = {
+        ok: true,
+        value: {
+          metadataOnly: true,
+          bot: {
+            ...botMetadata(human, bot),
+            ...(method === 'get' ? { kind: bot.kind ?? 'bot' } : {}),
+          },
+        },
+      };
       return method === 'modelPlan' ? Promise.resolve(metadata) : metadata;
     }
     try {

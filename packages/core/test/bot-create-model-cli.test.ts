@@ -78,6 +78,24 @@ afterEach(() => {
 });
 
 describe('deepseekbot create', () => {
+  it('shows the persisted assistant kind and defaults older records to bot', async () => {
+    const home = createTempRoot('botharness-create-kind-');
+    for (const kind of ['assistant', 'bot', undefined]) {
+      const created = await invoke(
+        ['create', '--name', 'Ada', ...(kind === undefined ? [] : ['--kind', kind])],
+        home,
+      );
+      expect(created.code).toBe(0);
+      const shown = await invoke(['show', created.json.bot.id], home);
+      expect(shown.code).toBe(0);
+      expect(shown.json.bot.kind).toBe(kind ?? 'bot');
+    }
+    const invalid = await invoke(['create', '--name', 'Invalid', '--kind', 'admin'], home);
+    expect(invalid.code).toBe(2);
+    expect(invalid.stderr + invalid.stdout).toContain('--kind must be assistant or bot');
+    expect((await invoke(['list'], home)).json.bots).toHaveLength(3);
+  });
+
   it('prints help without touching a home', async () => {
     const out: string[] = [];
     const code = await runBotCreateCli(['--help'], {

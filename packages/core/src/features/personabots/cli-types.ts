@@ -15,7 +15,7 @@ export interface BotCreateStep {
 }
 
 export interface BotCreateResult {
-  bot: { id: string; name: string };
+  bot: { id: string; name: string; kind?: 'assistant' | 'bot' };
   dm: { channelId: string };
   dataDir: string;
   steps: BotCreateStep[];

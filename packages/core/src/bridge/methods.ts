@@ -282,6 +282,7 @@ export type SharedBotSummary = ReturnType<
 >[number] & { orchestratorRunner?: OrchestratorRunner };
 
 export interface PersonaBotSummary {
+  kind?: PersonaBotRecord['kind'];
   orchestratorRunner?: OrchestratorRunner;
   modelAllowed?: boolean;
   ownerHumanId?: string;

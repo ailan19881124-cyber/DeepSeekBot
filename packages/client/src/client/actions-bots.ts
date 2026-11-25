@@ -34,7 +34,7 @@ import type { RosterActions, createRosterActions } from './actions-roster.js';
 export interface BotActions {
   createBot(input: CreatePersonaBotInput, sectionId?: string): Promise<CreatedBot>;
   openCreatedBot(bot: BotSummary, sectionId?: string): Promise<void>;
-  importBotZip(file: File, sectionId?: string): Promise<BotSummary>;
+  importBotZip(file: File, sectionId?: string, kind?: BotSummary['kind']): Promise<BotSummary>;
   botZipFiles(slug: string): Promise<BotZipFileListing>;
   exportBotZip(slug: string, displayName: string, choice?: BotZipExportChoice): Promise<void>;
   previewBotImport(gitUrl: string): Promise<{ gitUrl: string; commit: string }>;
@@ -96,9 +96,9 @@ export function createBotActions(
     async openCreatedBot(bot, sectionId) {
       await openCreatedBot(bot, sectionId);
     },
-    async importBotZip(file, sectionId) {
+    async importBotZip(file, sectionId, kind) {
       if (resources !== undefined) throw new Error('remote-bot-import-unavailable');
-      return openCreatedBot(await importBotZip(file), sectionId);
+      return openCreatedBot(await importBotZip(file, undefined, kind), sectionId);
     },
     botZipFiles(slug) {
       if (resources !== undefined) throw new Error('remote-bot-export-unavailable');

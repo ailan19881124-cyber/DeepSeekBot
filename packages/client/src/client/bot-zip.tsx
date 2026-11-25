@@ -153,6 +153,7 @@ export function botZipError(error: unknown, t: BotHarnessTranslate): string {
 
 export function ImportBotZipModal({
   target,
+  botKind,
   actions,
   sectionId,
   sectionName,
@@ -162,6 +163,7 @@ export function ImportBotZipModal({
   onBack,
 }: {
   target?: ReactNode;
+  botKind?: 'assistant' | 'bot' | undefined;
   actions: BridgeActions;
   sectionId?: string;
   sectionName?: string;
@@ -200,7 +202,11 @@ export function ImportBotZipModal({
     if (file === undefined || standing === undefined || importing) return;
     setImporting(true);
     setCause(undefined);
-    void actions.importBotZip(file, sectionId).then(
+    const imported =
+      botKind === 'assistant'
+        ? actions.importBotZip(file, sectionId, botKind)
+        : actions.importBotZip(file, sectionId);
+    void imported.then(
       () => {
         setImporting(false);
         onImported();

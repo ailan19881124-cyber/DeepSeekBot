@@ -174,6 +174,9 @@ export function createBotZipHttp(deps: BotZipHttpDeps): (request: Request) => Pr
 
   const importZip = async (request: Request): Promise<Response> => {
     const params = new URL(request.url).searchParams;
+    const kind = params.get('kind');
+    if (kind !== null && kind !== 'assistant' && kind !== 'bot')
+      return failure(400, 'invalid-input', 'kind must be assistant or bot');
     const metadata: Record<string, unknown> = {};
     if (params.has('displayName')) metadata['name'] = params.get('displayName');
     if (params.has('description')) metadata['bio'] = params.get('description');
@@ -219,6 +222,7 @@ export function createBotZipHttp(deps: BotZipHttpDeps): (request: Request) => Pr
     const result = await deps.registry.createFromFiles({
       slug,
       displayName,
+      ...(kind === null ? {} : { kind }),
       files: contents.files,
       ...(contents.history === undefined ? {} : { history: contents.history }),
       ...(roles === undefined ? {} : { roles }),

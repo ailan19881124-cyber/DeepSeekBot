@@ -396,6 +396,7 @@ export async function runOnlineManagement(
       ...(create.source.kind === 'git' ? { gitUrl: create.source.gitUrl, expectedCommit } : {}),
       operationKey,
       displayName: create.displayName,
+      ...(create.kind === 'assistant' ? { kind: create.kind } : {}),
       ...(create.persona === undefined ? {} : { persona: create.persona }),
       ...(create.coreMemory === undefined ? {} : { coreMemory: create.coreMemory }),
       ...(create.roles === undefined ? {} : { roles: create.roles }),
@@ -420,6 +421,7 @@ export async function runOnlineManagement(
       usage('A validated local bundle is required.');
     submitted = true;
     const metadata = {
+      ...(create.kind === 'assistant' ? { kind: create.kind } : {}),
       ...(create.displayName === undefined ? {} : { displayName: create.displayName }),
       ...(create.roles === undefined ? {} : { roles: create.roles }),
       ...(create.description === undefined ? {} : { description: create.description }),

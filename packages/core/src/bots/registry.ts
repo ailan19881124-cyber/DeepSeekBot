@@ -232,6 +232,7 @@ export function createPersonaBotRegistry(options: PersonaBotRegistryOptions): Pe
     const result: PersonaBotRecord = {
       ownerHumanId: record.ownerHumanId ?? 'local-human',
       slug: record.slug,
+      ...(record.kind === 'assistant' ? { kind: record.kind } : {}),
       displayName: record.displayName,
       workspaces: [...record.workspaces],
       createdAt: record.createdAt,
@@ -375,7 +376,7 @@ export function createPersonaBotRegistry(options: PersonaBotRegistryOptions): Pe
     )
       delete parsed.modelPlanRevision;
     if (!isPersonaBotRecord(parsed, slug)) throw new Error('Invalid PersonaBot Registry record');
-    return recordSnapshot(parsed);
+    return { ...recordSnapshot(parsed), kind: parsed.kind ?? 'bot' };
   };
   const read = (slug: string): PersonaBotRecord | undefined => {
     if (!isValidSlug(slug)) return undefined;

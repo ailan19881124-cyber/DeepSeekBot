@@ -23,6 +23,7 @@ export interface BotCreationResult {
   httpsFallback?: HttpsFallback;
 }
 export interface BotImportInput {
+  kind?: PersonaBotRecord['kind'];
   ownerHumanId?: string;
   displayName: string;
   description?: string;
@@ -40,6 +41,7 @@ function importFingerprint(input: BotImportReference): string {
     kind: 'bot-import-v1',
     ...(input.ownerHumanId === undefined ? {} : { ownerHumanId: input.ownerHumanId }),
     displayName: input.displayName,
+    ...(input.kind === 'assistant' ? { kind: input.kind } : {}),
     ...(input.description === undefined ? {} : { description: input.description }),
     ...(input.roles === undefined ? {} : { roles: input.roles }),
     source:
@@ -193,6 +195,7 @@ export function createBotCreation(options: {
           slug: row.bot_slug,
           ...(input.ownerHumanId === undefined ? {} : { ownerHumanId: input.ownerHumanId }),
           displayName: input.displayName,
+          ...(input.kind === 'assistant' ? { kind: input.kind } : {}),
           ...(input.description === undefined ? {} : { description: input.description }),
           ...(input.roles === undefined ? {} : { roles: input.roles }),
         };

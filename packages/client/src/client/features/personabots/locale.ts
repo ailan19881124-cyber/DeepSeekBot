@@ -302,6 +302,9 @@ export const zh = {
   'bot.create.gitUrl.placeholder': 'https://github.com/owner/repo.git',
   'bot.create.gitUrl.hint':
     '支持 HTTPS、SSH 和 git@host:path；私有仓库使用 Host 已配置的 Git 凭证。',
+  'bot.create.kind.label': '创建哪种身份',
+  'bot.create.kind.bot': 'Bot',
+  'bot.create.kind.assistant': '助理级',
   'bot.create.name.label': '名称',
   'bot.create.name.placeholder': '例如：小研',
   'bot.create.roles.label': '标签（可选）',
@@ -717,6 +720,9 @@ My relationship with you, established lore and topics to avoid: [fill in].
   'bot.create.gitUrl.placeholder': 'https://github.com/owner/repo.git',
   'bot.create.gitUrl.hint':
     'HTTPS, SSH, and git@host:path are supported. Private repositories use Git credentials configured on the Host.',
+  'bot.create.kind.label': 'Identity type',
+  'bot.create.kind.bot': 'Bot',
+  'bot.create.kind.assistant': 'Assistant',
   'bot.create.name.label': 'Name',
   'bot.create.name.placeholder': 'e.g. Xiao Yan',
   'bot.create.roles.label': 'Tags (optional)',

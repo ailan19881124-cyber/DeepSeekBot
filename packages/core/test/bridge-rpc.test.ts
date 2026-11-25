@@ -4,9 +4,12 @@ import { registryDatabase } from './registry-fixture.js';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { Context } from '@deepseek-ai/cordis';
+import { TypertGatewayService } from '@deepseek-ai/dsh-api-gateway';
+import { Peer } from '@deepseek-ai/dsh-client-connection';
 import { remoteMethods } from '@deepseek-ai/dsh-typert-protocol';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BRIDGE_NAMESPACE, BRIDGE_SERVICE_KEY } from '../src/bridge/rpc.js';
+import { BRIDGE_NAMESPACE, BRIDGE_SERVICE_KEY, registerBridge } from '../src/bridge/rpc.js';
 import { attachOperationalModule, mountOperationalDatabase } from '../src/database/owner.js';
 import { BOT_HARNESS_SCHEMA_PLAN } from '../src/database/schema-plan.js';
 import { createBotSourcePolicyStore } from '../src/runtime/source-policy.js';
@@ -20,6 +23,34 @@ afterEach(() => {
 });
 
 describe('bridge typert service', () => {
+  it('creates an assistant through the Typert Gateway', async () => {
+    const { methodsForHuman, registry } = setup();
+    const ctx = new Context();
+    ctx.provide('typert', {
+      local: { get: () => undefined, hasSeen: () => false },
+      lookups: { definitions: () => [] },
+    });
+    registerBridge(ctx, methodsForHuman);
+    const gateway = new TypertGatewayService(ctx, {});
+    const peer = new Peer(ctx, { principal: { kind: 'owner' } });
+    try {
+      const create = (kind: string) =>
+        gateway.invoke({
+          namespace: 'botharness',
+          method: 'create',
+          args: { displayName: 'Ada', kind },
+          peer,
+        });
+      await expect(create('assistant')).resolves.toMatchObject({
+        bot: { slug: 'ada', kind: 'assistant' },
+      });
+      expect(registry.getHistorical('ada')?.kind).toBe('assistant');
+      await expect(create('admin')).rejects.toMatchObject({ code: 'invalid-input' });
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  });
+
   it.each([true, false])(
     'forwards the Owner password sign-out choice %s',
     async (signOutOthers) => {
@@ -162,6 +193,7 @@ describe('bridge typert service', () => {
       'memoryLocation',
       'coreMemory',
       'operationKey',
+      'kind',
     ]);
     expect(parameterNames(service.update)).toEqual(['slug', 'patch', 'expectedProfile']);
     expect(parameterNames(service.pause)).toEqual(['slug']);
@@ -178,6 +210,7 @@ describe('bridge typert service', () => {
       'avatar',
       'memoryLocation',
       'coreMemory',
+      'kind',
     ]);
     expect(parameterNames(service.createFromGit)).toEqual([
       'displayName',
@@ -188,6 +221,7 @@ describe('bridge typert service', () => {
       'operationKey',
       'expectedCommit',
       'listingId',
+      'kind',
     ]);
     expect(parameterNames(service.botImportPreview)).toEqual(['gitUrl']);
     expect(parameterNames(service.botImportLookup)).toEqual([
@@ -197,6 +231,7 @@ describe('bridge typert service', () => {
       'displayName',
       'roles',
       'description',
+      'kind',
     ]);
     expect(parameterNames(service.marketplaceList)).toEqual(['query']);
     expect(parameterNames(service.marketplaceTopics)).toEqual([]);

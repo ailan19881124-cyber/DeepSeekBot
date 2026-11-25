@@ -13,7 +13,7 @@ import type { BotCreationReceipt } from '../../bots/creation.js';
 import type { OnboardingSnapshot, TutorialAction } from '../../onboarding/service.js';
 import type { HttpsFallback } from '../../memory/clone.js';
 import type { PersonaBotDeletionPreview, PersonaBotDeletion } from '../../bots/deletion.js';
-import type { PersonaBotPatch } from '../../bots/persona-bot.js';
+import type { PersonaBotKind, PersonaBotPatch } from '../../bots/persona-bot.js';
 import type { ModelRoute } from '../../models/presets.js';
 import type {
   PersonaBotDetail,
@@ -87,6 +87,7 @@ export function create(
   memoryLocation?: string,
   coreMemory?: string,
   operationKey?: string,
+  kind?: PersonaBotKind,
 ): {
   bot: PersonaBotDetail;
   channelId?: string;
@@ -105,6 +106,7 @@ export function create(
       memoryLocation,
       coreMemory,
       operationKey,
+      kind,
     }),
   );
 }
@@ -122,6 +124,7 @@ export function createLookup(
   avatar?: string,
   memoryLocation?: string,
   coreMemory?: string,
+  kind?: PersonaBotKind,
 ): { receipt: BotCreationReceipt | null } {
   return unwrap(
     methods.createLookup({
@@ -136,6 +139,7 @@ export function createLookup(
       memoryLocation,
       coreMemory,
       operationKey,
+      kind,
     }),
   );
 }
@@ -155,6 +159,7 @@ export function botImportLookup(
   displayName: string,
   roles?: string[],
   description?: string,
+  kind?: PersonaBotKind,
 ): { receipt: BotCreationReceipt | null } {
   return unwrap(
     methods.botImportLookup({
@@ -164,6 +169,7 @@ export function botImportLookup(
       displayName,
       roles,
       description,
+      kind,
     }),
   );
 }
@@ -178,6 +184,7 @@ export function createFromGit(
   operationKey?: string,
   expectedCommit?: string,
   listingId?: string,
+  kind?: PersonaBotKind,
 ): Promise<{
   bot: PersonaBotDetail;
   httpsFallback?: HttpsFallback;
@@ -194,6 +201,7 @@ export function createFromGit(
       operationKey,
       expectedCommit,
       listingId,
+      kind,
     }),
   );
 }
@@ -419,6 +427,7 @@ export const personaBotLifecycleRpc = {
     memoryLocation?: string,
     coreMemory?: string,
     operationKey?: string,
+    kind?: PersonaBotKind,
   ): {
     bot: PersonaBotDetail;
     channelId?: string;
@@ -437,6 +446,7 @@ export const personaBotLifecycleRpc = {
       memoryLocation,
       coreMemory,
       operationKey,
+      kind,
     );
   },
 
@@ -452,6 +462,7 @@ export const personaBotLifecycleRpc = {
     avatar?: string,
     memoryLocation?: string,
     coreMemory?: string,
+    kind?: PersonaBotKind,
   ): { receipt: BotCreationReceipt | null } {
     return createLookup(
       this.methods,
@@ -466,6 +477,7 @@ export const personaBotLifecycleRpc = {
       avatar,
       memoryLocation,
       coreMemory,
+      kind,
     );
   },
 
@@ -482,6 +494,7 @@ export const personaBotLifecycleRpc = {
     displayName: string,
     roles?: string[],
     description?: string,
+    kind?: PersonaBotKind,
   ): { receipt: BotCreationReceipt | null } {
     return botImportLookup(
       this.methods,
@@ -491,6 +504,7 @@ export const personaBotLifecycleRpc = {
       displayName,
       roles,
       description,
+      kind,
     );
   },
 } satisfies ThisType<BridgeRpcReceiver>;
@@ -505,6 +519,7 @@ export const personaBotManagementRpc = {
     operationKey?: string,
     expectedCommit?: string,
     listingId?: string,
+    kind?: PersonaBotKind,
   ): Promise<{
     bot: PersonaBotDetail;
     httpsFallback?: HttpsFallback;
@@ -521,6 +536,7 @@ export const personaBotManagementRpc = {
       operationKey,
       expectedCommit,
       listingId,
+      kind,
     );
   },
 

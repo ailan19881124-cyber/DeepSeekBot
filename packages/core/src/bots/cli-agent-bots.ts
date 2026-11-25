@@ -11,7 +11,7 @@ import {
 
 export const TOB_AGENT_BOT_COMMAND_USAGE: Readonly<Record<string, string>> = {
   create:
-    'deepseekbot create --name <name> --operation-key <stable-key> [--description <bio>] [--role <tag>] [--avatar-file <image>] [--persona <text> | --persona-stdin] [--core-memory <text> | --core-memory-stdin]',
+    'deepseekbot create --name <name> [--kind assistant|bot] --operation-key <stable-key> [--description <bio>] [--role <tag>] [--avatar-file <image>] [--persona <text> | --persona-stdin] [--core-memory <text> | --core-memory-stdin]',
   show: 'deepseekbot show <bot-slug>; returns profileFingerprint for subsequent writes',
   update:
     'deepseekbot update <bot-slug> --expected-profile <observed-fingerprint> [--name <name>] [--description <bio>] [--role <tag>]',
@@ -36,6 +36,7 @@ const OPTIONS: Readonly<Record<string, readonly string[]>> = {
   create: [
     'name',
     'operation-key',
+    'kind',
     'description',
     'role',
     'avatar-file',
@@ -141,7 +142,14 @@ export async function parseAgentBots(
       'persona-stdin': values['persona-stdin'] === true,
       'core-memory-stdin': values['core-memory-stdin'] === true,
     };
-    for (const key of ['name', 'description', 'avatar-file', 'persona', 'core-memory'] as const) {
+    for (const key of [
+      'name',
+      'description',
+      'avatar-file',
+      'persona',
+      'core-memory',
+      'kind',
+    ] as const) {
       const value = text(values[key], `--${key}`);
       if (value !== undefined) createValues[key] = value;
     }
@@ -156,6 +164,7 @@ export async function parseAgentBots(
       command,
       args: {
         displayName: created.displayName,
+        ...(created.kind === 'assistant' ? { kind: created.kind } : {}),
         ...(created.description === undefined ? {} : { description: created.description }),
         ...(created.roles === undefined ? {} : { roles: created.roles }),
         ...(created.avatar === undefined ? {} : { avatar: created.avatar }),

@@ -1,4 +1,5 @@
-import type { ReactElement } from 'react';
+import { useId, useState, type ReactElement } from 'react';
+import { SegmentedControl } from './ds/segmented.js';
 import * as stylex from '@stylexjs/stylex';
 import { Modal } from './modal.js';
 import { SidebarCardList, SidebarCardRow } from './sidebar-card.js';
@@ -95,19 +96,49 @@ export function BotCreateSteps({
   );
 }
 
+export function BotKindPicker({
+  t,
+  value,
+  onChange,
+  disabled,
+}: {
+  t: BotHarnessTranslate;
+  value: 'assistant' | 'bot';
+  onChange: (kind: 'assistant' | 'bot') => void;
+  disabled?: boolean;
+}): ReactElement {
+  const id = useId();
+  return (
+    <SegmentedControl
+      id={id}
+      label={t('bot.create.kind.label')}
+      value={value}
+      options={[
+        { value: 'bot', label: t('bot.create.kind.bot') },
+        { value: 'assistant', label: t('bot.create.kind.assistant') },
+      ]}
+      onChange={onChange}
+      disabled={disabled}
+    />
+  );
+}
+
 export function BotCreateSourceModal({
   t,
   member,
   localImports,
+  initialKind = 'bot',
   onSelect,
   onClose,
 }: {
   t: BotHarnessTranslate;
   member: boolean;
   localImports: boolean;
-  onSelect: (source: 'empty' | 'git' | 'zip') => void;
+  initialKind?: 'assistant' | 'bot' | undefined;
+  onSelect: (source: 'empty' | 'git' | 'zip', kind: 'assistant' | 'bot') => void;
   onClose: () => void;
 }): ReactElement {
+  const [kind, setKind] = useState(initialKind);
   return (
     <Modal
       open
@@ -119,13 +150,14 @@ export function BotCreateSourceModal({
     >
       <div className="bh-root" {...stylex.props(styles.body)}>
         <BotCreateSteps t={t} />
+        <BotKindPicker t={t} value={kind} onChange={setKind} />
         <div {...stylex.props(styles.cards)}>
           <SidebarCardList>
             <SidebarCardRow
               icon="plus"
               title={t('roster.menu.createBot.empty')}
               meta={t('bot.create.source.empty')}
-              onClick={() => onSelect('empty')}
+              onClick={() => onSelect('empty', kind)}
             />
           </SidebarCardList>
           {!member ? (
@@ -135,7 +167,7 @@ export function BotCreateSourceModal({
                   icon="git-branch"
                   title={t('roster.menu.createBot.git')}
                   meta={t('bot.create.source.git')}
-                  onClick={() => onSelect('git')}
+                  onClick={() => onSelect('git', kind)}
                 />
               </SidebarCardList>
               <SidebarCardList>
@@ -144,7 +176,7 @@ export function BotCreateSourceModal({
                   title={t('roster.menu.createBot.zip')}
                   meta={t(localImports ? 'bot.create.source.zip' : 'environment.create.localOnly')}
                   disabled={!localImports}
-                  onClick={() => onSelect('zip')}
+                  onClick={() => onSelect('zip', kind)}
                 />
               </SidebarCardList>
             </>

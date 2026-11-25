@@ -238,7 +238,10 @@ it.each(reads)(
     const result = await f.invoke(method, { slug: 'alice-bot' });
     expect(result).toMatchObject({ metadataOnly: true, bot: f.metadata() });
     if (method !== 'deletionPreview')
-      expect(result).toEqual({ metadataOnly: true, bot: f.metadata() });
+      expect(result).toEqual({
+        metadataOnly: true,
+        bot: { ...f.metadata(), ...(method === 'get' ? { kind: 'bot' } : {}) },
+      });
     expect(JSON.stringify(result)).not.toContain(SECRET);
     expect(JSON.stringify(result)).not.toContain(f.memory);
     expect(JSON.stringify(result)).not.toContain('private-session');
@@ -276,7 +279,7 @@ it('exposes content only through the audited view without unlocking legacy reads
   expect(JSON.stringify(opened)).toContain(SECRET);
   expect(await f.invoke('get', { slug: 'alice-bot' })).toEqual({
     metadataOnly: true,
-    bot: f.metadata(),
+    bot: { ...f.metadata(), kind: 'bot' },
   });
   expect(f.records()).toHaveLength(1);
   expect(f.team.privateAccess.verify(owner)).toEqual({ ok: true });
@@ -536,7 +539,10 @@ it('keeps the offline CLI from reading or mutating another member Bot outside an
     expect(JSON.stringify(lines)).not.toContain(f.memory);
     if (args[1] === 'show') {
       expect(status).toBe(0);
-      expect(JSON.parse(lines[0] ?? '{}')).toEqual({ metadataOnly: true, bot: metadata });
+      expect(JSON.parse(lines[0] ?? '{}')).toEqual({
+        metadataOnly: true,
+        bot: { ...metadata, kind: 'bot' },
+      });
     } else expect(status).not.toBe(0);
   }
   const database = new DatabaseSync(join(f.home, 'botharness', 'botharness.db'), {

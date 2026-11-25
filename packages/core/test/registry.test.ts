@@ -459,6 +459,8 @@ describe('createPersonaBotRegistry', () => {
   it('keeps Bots without a seed version on the original seed and rejects unknown versions', () => {
     const record = { slug: 'ada', displayName: 'Ada', workspaces: [], createdAt: '' };
     expect(isPersonaBotRecord(record, 'ada')).toBe(true);
+    expect(isPersonaBotRecord({ ...record, kind: 'assistant' }, 'ada')).toBe(true);
+    expect(isPersonaBotRecord({ ...record, kind: 'admin' }, 'ada')).toBe(false);
     expect(isPersonaBotRecord({ ...record, avatarSeed: 2 }, 'ada')).toBe(true);
     expect(isPersonaBotRecord({ ...record, avatarSeed: 3 }, 'ada')).toBe(false);
   });

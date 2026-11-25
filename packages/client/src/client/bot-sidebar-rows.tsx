@@ -241,7 +241,10 @@ function BotRow({
         label={
           <span className="bh-body">
             <span className="bh-top">
-              <span className="bh-name">{bot.displayName}</span>
+              <span className="bh-name">
+                {bot.displayName}
+                {bot.kind === 'assistant' ? ` · ${t('bot.create.kind.assistant')}` : null}
+              </span>
               {muted ? <MutedMark t={t} renderSidebarIcon={renderSidebarIcon} /> : null}
               <ChannelMessageTime channel={channel} now={now} t={t} />
             </span>

@@ -13,7 +13,14 @@ import { isBotPrimaryColor, type BotPrimaryColor } from './primary-color.js';
 import type { PromptLimitValues } from '../prompts/prompt-limits.js';
 import type { PromptPartOverrides } from '../prompts/prompt-presets.js';
 
+export type PersonaBotKind = 'assistant' | 'bot';
+
+export function isPersonaBotKind(value: unknown): value is PersonaBotKind {
+  return value === 'assistant' || value === 'bot';
+}
+
 export interface PersonaBotRecord {
+  kind?: PersonaBotKind;
   ownerHumanId?: string;
   slug: string;
   displayName: string;
@@ -108,6 +115,7 @@ export function isMarketplaceListingRef(value: unknown): value is MarketplaceLis
 }
 
 export interface CreatePersonaBotInput {
+  kind?: PersonaBotKind;
   ownerHumanId?: string;
   slug: string;
   displayName: string;
@@ -211,6 +219,7 @@ export function isPersonaBotRecord(value: unknown, slug: string): value is Perso
   if (typeof value !== 'object' || value === null) return false;
   const record = value as Record<string, unknown>;
   if (record['slug'] !== slug) return false;
+  if (record['kind'] !== undefined && !isPersonaBotKind(record['kind'])) return false;
   if (
     record['ownerHumanId'] !== undefined &&
     (typeof record['ownerHumanId'] !== 'string' || record['ownerHumanId'].trim().length === 0)

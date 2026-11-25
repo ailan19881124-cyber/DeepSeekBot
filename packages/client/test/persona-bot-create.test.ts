@@ -13,6 +13,8 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
   };
 });
 
+import { BotCreateSourceModal } from '../src/client/bot-create-source.js';
+import { zhTranslate } from '../src/client/locale.js';
 import type { BridgeActions } from '../src/client/actions.js';
 import { BridgeCallError } from '../src/client/bridge.js';
 import {
@@ -456,6 +458,48 @@ describe('PersonaBot creation dialog', () => {
       },
     };
   }
+
+  it('carries the selected kind from the source step to the details step', async () => {
+    Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+    const host = document.body.appendChild(document.createElement('div'));
+    const root = createRoot(host);
+    const onSelect = vi.fn();
+    try {
+      await act(async () =>
+        root.render(
+          createElement(BotCreateSourceModal, {
+            t: zhTranslate,
+            member: false,
+            localImports: true,
+            onSelect,
+            onClose: vi.fn(),
+          }),
+        ),
+      );
+      await act(async () => buttonNamed('助理级').click());
+      await act(async () => buttonNamed('从零创建设置名称和人设，创建全新的 Bot。').click());
+      expect(onSelect).toHaveBeenCalledWith('empty', 'assistant');
+    } finally {
+      await act(async () => root.unmount());
+      host.remove();
+    }
+  });
+
+  it('submits the selected assistant kind', async () => {
+    const createBot = vi.fn(async () => ({ slug: 'ada', displayName: 'Ada' }));
+    const { done } = await render(createBot);
+    try {
+      await act(async () => buttonNamed('助理级').click());
+      await typeInto(fieldNamed('名称'), 'Ada');
+      await act(async () => dialog().querySelector('form')!.requestSubmit());
+      expect(createBot).toHaveBeenCalledWith(
+        expect.objectContaining({ displayName: 'Ada', kind: 'assistant' }),
+        undefined,
+      );
+    } finally {
+      await done();
+    }
+  });
 
   it('labels each field and submits the trimmed name and bio on Enter', async () => {
     const createBot = vi.fn(async () => ({ slug: 'ada', displayName: 'Ada' }));

@@ -1,7 +1,7 @@
 import { Button } from './ds/button.js';
 import { Input } from './ds/input.js';
 import { SegmentedControl } from './ds/segmented.js';
-import { BotCreateSteps } from './bot-create-source.js';
+import { BotCreateSteps, BotKindPicker } from './bot-create-source.js';
 import { useId, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import * as stylex from '@stylexjs/stylex';
 import { randomTiltiesAvatar } from '@botharness/host-client/tilties-avatars';
@@ -130,6 +130,7 @@ export function isAbsoluteHostPath(path: string): boolean {
 export function CreatePersonaBotModal({
   actions,
   source = 'empty',
+  botKind,
   sectionId,
   sectionName,
   t = zhTranslate,
@@ -144,6 +145,7 @@ export function CreatePersonaBotModal({
 }: {
   actions: BridgeActions;
   source?: 'empty' | 'git';
+  botKind?: 'assistant' | 'bot' | undefined;
   sectionId?: string;
   sectionName?: string;
   t?: BotHarnessTranslate | undefined;
@@ -159,6 +161,7 @@ export function CreatePersonaBotModal({
   const personaPresetId = useId();
   const avatarStyleId = useId();
   const [avatar, setAvatar] = useState<string>();
+  const [kind, setKind] = useState<'assistant' | 'bot'>('bot');
   const [displayName, setDisplayName] = useState('');
   const [personaPreset, setPersonaPreset] = useState<'blank' | 'colleague' | 'roleplay'>('blank');
   const [personaDrafts, setPersonaDrafts] = useState(() => ({
@@ -219,6 +222,7 @@ export function CreatePersonaBotModal({
       .createBot(
         {
           displayName: displayName.trim(),
+          ...((botKind ?? kind) === 'assistant' ? { kind: 'assistant' } : {}),
           ...(source === 'git'
             ? { gitUrl: gitUrl.trim() }
             : { persona: personaDrafts[personaPreset] }),
@@ -334,6 +338,9 @@ export function CreatePersonaBotModal({
     >
       {onBack ? <BotCreateSteps t={t} onBack={onBack} disabled={fieldsLocked} /> : null}
       {target}
+      {botKind === undefined ? (
+        <BotKindPicker t={t} value={kind} onChange={setKind} disabled={fieldsLocked} />
+      ) : null}
       {source === 'git' ? (
         <TextField
           label={t('bot.create.gitUrl.label')}

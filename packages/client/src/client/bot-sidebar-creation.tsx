@@ -127,10 +127,12 @@ export function renderEnvironmentCreationDialogs({
           member={member}
           localImports={!hostTabs || remoteHostsState.tab === 'local'}
           onClose={() => setCreateRequest(undefined)}
-          onSelect={(source) =>
+          initialKind={createRequest.botKind}
+          onSelect={(source, botKind) =>
             setCreateRequest({
               kind: 'bot',
               source,
+              botKind,
               ...(createRequest.sectionId ? { sectionId: createRequest.sectionId } : {}),
             })
           }
@@ -149,6 +151,7 @@ export function renderEnvironmentCreationDialogs({
                 : {
                     kind: 'bot',
                     source: createRequest.source === 'git' ? 'git' : 'empty',
+                    botKind: createRequest.botKind,
                     ...(createRequest.sectionId === undefined
                       ? {}
                       : { sectionId: createRequest.sectionId }),
@@ -159,6 +162,7 @@ export function renderEnvironmentCreationDialogs({
               ? () =>
                   setCreateRequest({
                     kind: 'bot-source',
+                    botKind: createRequest.botKind,
                     ...(createRequest.sectionId ? { sectionId: createRequest.sectionId } : {}),
                   })
               : undefined
@@ -208,9 +212,11 @@ export function renderLocalCreationDialogs({
     importZip:
       createRequest?.kind === 'bot' && createRequest.source === 'zip' ? (
         <ImportBotZipModal
+          botKind={createRequest.botKind}
           onBack={() =>
             setCreateRequest({
               kind: 'bot-source',
+              botKind: createRequest.botKind,
               ...(createRequest.sectionId ? { sectionId: createRequest.sectionId } : {}),
             })
           }

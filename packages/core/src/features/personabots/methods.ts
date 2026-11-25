@@ -42,10 +42,11 @@ import {
 import { botAvatarUrl } from '../../bots/avatar-http.js';
 import { botBannerSummary } from '../../bots/banner-http.js';
 import { currentBotPrimaryColor, historicalBotPrimaryColor } from '../../bots/primary-color.js';
-import type {
-  CreatePersonaBotResult,
-  PersonaBotPatch,
-  PersonaBotRecord,
+import {
+  isPersonaBotKind,
+  type CreatePersonaBotResult,
+  type PersonaBotPatch,
+  type PersonaBotRecord,
 } from '../../bots/persona-bot.js';
 import type { PersonaBotDeletionPreview, PersonaBotDeletion } from '../../bots/deletion.js';
 
@@ -71,6 +72,9 @@ function parseCreation(
   payload: unknown,
 ): BridgeResult<{ input: BotCreationInput; operationKey?: string }> {
   const source = asObject(payload);
+  const kind = source['kind'];
+  if (kind !== undefined && !isPersonaBotKind(kind))
+    return invalidInput('kind must be assistant or bot');
   const displayName = source['displayName'];
   if (typeof displayName !== 'string' || displayName.trim().length === 0) {
     return invalidInput('displayName is required');
@@ -101,6 +105,7 @@ function parseCreation(
   if (operationKey !== undefined && typeof operationKey !== 'string')
     return invalidInput('operationKey must be a string');
   const input = {
+    ...(kind === 'assistant' ? { kind } : {}),
     displayName,
     ...(persona.value === undefined ? {} : { persona: persona.value }),
     ...(coreMemory.value === undefined ? {} : { coreMemory: coreMemory.value }),
@@ -218,6 +223,7 @@ function summarize(
   return {
     slug: record.slug,
     displayName: record.displayName,
+    kind: record.kind ?? 'bot',
     ...(protectedTob
       ? {
           tob: {
@@ -549,6 +555,9 @@ export function createPersonaBotsBridgeMethods(
     },
     botImportLookup(payload) {
       const source = asObject(payload);
+      const kind = source['kind'];
+      if (kind !== undefined && !isPersonaBotKind(kind))
+        return invalidInput('kind must be assistant or bot');
       const displayName = source['displayName'];
       const gitUrl = source['gitUrl'];
       const expectedCommit = source['expectedCommit'];
@@ -580,6 +589,7 @@ export function createPersonaBotsBridgeMethods(
         };
       try {
         const input = imports.gitInput({
+          ...(kind === 'assistant' ? { kind } : {}),
           displayName,
           gitUrl,
           expectedCommit,
@@ -622,6 +632,9 @@ export function createPersonaBotsBridgeMethods(
     },
     async createFromGit(payload) {
       const source = asObject(payload);
+      const kind = source['kind'];
+      if (kind !== undefined && !isPersonaBotKind(kind))
+        return invalidInput('kind must be assistant or bot');
       const displayName = source['displayName'];
       const gitUrl = source['gitUrl'];
       if (typeof displayName !== 'string' || displayName.trim().length === 0) {
@@ -655,6 +668,7 @@ export function createPersonaBotsBridgeMethods(
           return invalidInput('Stable Git import needs operationKey and expectedCommit');
         try {
           const input = imports.gitInput({
+            ...(kind === 'assistant' ? { kind } : {}),
             gitUrl,
             expectedCommit: source['expectedCommit'],
             displayName,
@@ -686,6 +700,7 @@ export function createPersonaBotsBridgeMethods(
       }
       const slug = createBotId();
       const result = await deps.registry.createFromGit({
+        ...(kind === 'assistant' ? { kind } : {}),
         slug,
         displayName,
         gitUrl,

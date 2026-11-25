@@ -114,7 +114,7 @@
               workflowEngine: true
             config:
               - id: tool-subagent-control
-                name: 'deepseekbot/dist/subagent-control.mjs'
+                name: '@deepseek-ai/dsh-tool-subagent-control'
               - id: tool-subagent
                 name: '@deepseek-ai/dsh-tool-subagent'
                 disabled: true

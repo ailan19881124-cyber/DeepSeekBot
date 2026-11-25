@@ -6,7 +6,7 @@ import {
   type BotCreationInput,
   type BotCreationService,
 } from '../bots/creation.js';
-import { isPersonaBotAvatar } from '../bots/persona-bot.js';
+import { isPersonaBotAvatar, isPersonaBotKind } from '../bots/persona-bot.js';
 import type { PersonaBotRegistry } from '../bots/registry.js';
 import { botProfileFingerprint } from '../bots/profile-snapshot.js';
 import { tobBotProfileView } from './cli-bot-profile-operations.js';
@@ -42,12 +42,15 @@ export function createTobBotCreationOperations(deps: {
       'avatar',
       'persona',
       'coreMemory',
+      'kind',
     ];
     if (Object.keys(args).some((key) => !allowed.includes(key)))
       throw new TobError('invalid-input');
     const operationKey = args.operationKey;
     if (typeof operationKey !== 'string' || !validBotCreationKey(operationKey))
       throw new TobError('invalid-operation-key');
+    if (args.kind !== undefined && !isPersonaBotKind(args.kind))
+      throw new TobError('invalid-input');
     const displayName = args.displayName;
     if (
       typeof displayName !== 'string' ||
@@ -84,8 +87,11 @@ export function createTobBotCreationOperations(deps: {
       (typeof args.avatar !== 'string' || !isPersonaBotAvatar(args.avatar))
     )
       throw new TobError('invalid-input');
-    const { operationKey: _key, ...fields } = structuredClone(args);
-    const input = fields as unknown as BotCreationInput;
+    const { operationKey: _key, kind, ...fields } = structuredClone(args);
+    const input: BotCreationInput = {
+      ...(fields as unknown as BotCreationInput),
+      ...(kind === 'assistant' ? { kind } : {}),
+    };
     const lookup = () => {
       try {
         return deps.creations.lookup(operationKey, input);

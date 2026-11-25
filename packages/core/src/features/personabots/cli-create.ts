@@ -16,7 +16,12 @@ import {
   BOT_ZIP_MAX_BYTES,
   BOT_ZIP_MAX_ENTRIES,
 } from '../../bots/bot-zip.js';
-import { personaBotAvatarFromBytes, type PersonaBotRecord } from '../../bots/persona-bot.js';
+import {
+  isPersonaBotKind,
+  personaBotAvatarFromBytes,
+  type PersonaBotKind,
+  type PersonaBotRecord,
+} from '../../bots/persona-bot.js';
 import type { PersonaBotRegistry } from '../../bots/registry.js';
 import { ZipArchiveError, type ZipEntry } from '../../bots/zip-archive.js';
 import type { BotCreateCliIo, BotCreateStep, BotCreateResult, CreateValues } from './cli-types.js';
@@ -166,6 +171,7 @@ function failureOf(reason: string, detail?: string): CliFailure {
 }
 
 export interface ValidatedCreate {
+  kind: PersonaBotKind;
   displayName: string | undefined;
   persona: string | undefined;
   coreMemory?: string;
@@ -185,6 +191,8 @@ export async function validatedCreate(
   values: CreateValues,
   readStdin: () => Promise<string>,
 ): Promise<ValidatedCreate> {
+  const kind = values.kind ?? 'bot';
+  if (!isPersonaBotKind(kind)) throw usageError('--kind must be assistant or bot.');
   const zip = trimmed(values['from-zip']);
   const dir = trimmed(values['from-dir']);
   const git = trimmed(values['from-git']);
@@ -240,6 +248,7 @@ export async function validatedCreate(
       );
     }
     return {
+      kind,
       displayName: name,
       persona: undefined,
       roles,
@@ -253,6 +262,7 @@ export async function validatedCreate(
       throw usageError('The persona comes from the bundle, not --persona.');
     }
     return {
+      kind,
       displayName: name,
       persona: undefined,
       roles,
@@ -266,6 +276,7 @@ export async function validatedCreate(
       throw usageError('The persona comes from the bundle, not --persona.');
     }
     return {
+      kind,
       displayName: name,
       persona: undefined,
       roles,
@@ -280,6 +291,7 @@ export async function validatedCreate(
   const pipedCoreMemory = coreMemoryStdin && piped.length > 0 ? piped : undefined;
   const chosenCoreMemory = coreMemory ?? pipedCoreMemory;
   return {
+    kind,
     displayName: name,
     persona: personaStdin === true ? (piped.length > 0 ? piped : undefined) : persona,
     ...(chosenCoreMemory === undefined ? {} : { coreMemory: chosenCoreMemory }),
@@ -357,6 +369,7 @@ export async function runCreate(
     let slug = mintSlug();
     steps.push({ name: 'allocate-id', status: 'ok' });
     const base = {
+      kind: validated.kind,
       ...(validated.roles === undefined ? {} : { roles: validated.roles }),
       ...(validated.description === undefined ? {} : { description: validated.description }),
     };
@@ -462,6 +475,7 @@ export async function runCreate(
       registry.createFromFiles({
         slug: candidate,
         displayName,
+        kind: validated.kind,
         files: bundle.files,
         ...(bundle.history === undefined ? {} : { history: bundle.history }),
         ...(roles === undefined ? {} : { roles }),

@@ -176,7 +176,7 @@ describe('PersonaBot agent preset', () => {
     expect(generated).not.toContain('@deepseek-ai/dsh-tool-schedule');
     expect(generated).not.toContain('{{cwd}}');
     expect(generated).toContain('@deepseek-ai/dsh-tool-fs');
-    expect(generated).toContain('deepseekbot/dist/subagent-control.mjs');
+    expect(generated).toContain("name: '@deepseek-ai/dsh-tool-subagent-control'");
     expect(generated).not.toContain('@deepseek-ai/dsh-tool-subagent-control/list-agents');
     expect(botPreset(standardPresetSource(root))).toBe(generated);
   });

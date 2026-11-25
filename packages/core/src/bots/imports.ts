@@ -53,6 +53,7 @@ function buildBotImports(
     gitUrl: string;
     expectedCommit: string;
     displayName: string;
+    kind?: BotImportInput['kind'];
     description?: string;
     roles?: string[];
   }): BotImportInput => {
@@ -64,6 +65,7 @@ function buildBotImports(
       );
     return {
       displayName: input.displayName,
+      ...(input.kind === undefined ? {} : { kind: input.kind }),
       ...(input.description === undefined ? {} : { description: input.description }),
       ...(input.roles === undefined ? {} : { roles: input.roles }),
       source: { kind: 'git', gitUrl, commit: input.expectedCommit },

@@ -18,6 +18,7 @@ import {
 } from '../../roster.js';
 
 export interface CreatePersonaBotInput {
+  kind?: 'assistant' | 'bot';
   operationKey?: string;
   expectedCommit?: string;
   displayName: string;
@@ -100,6 +101,8 @@ export function createPersonaBotReaders(
     if (typeof slug !== 'string' || slug.length === 0 || typeof displayName !== 'string') {
       return undefined;
     }
+    const kind = record['kind'];
+    if (kind !== undefined && kind !== 'assistant' && kind !== 'bot') return undefined;
     const aggregateState = record['aggregateState'];
     const createdAt = record['createdAt'];
     const roles = stringArray(record['roles']);
@@ -130,6 +133,7 @@ export function createPersonaBotReaders(
         : {}),
       slug,
       displayName,
+      kind: kind ?? 'bot',
       ...(typeof asRecord(record['tob'])?.['defaultName'] === 'boolean' &&
       typeof asRecord(record['tob'])?.['defaultAvatar'] === 'boolean'
         ? {

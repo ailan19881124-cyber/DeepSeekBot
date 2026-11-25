@@ -254,6 +254,7 @@ export class TeamBots {
         const bot = z
           .object({
             displayName: z.string(),
+            kind: z.enum(['assistant', 'bot']).default('bot'),
             avatar: z.string().optional(),
             paused: z.boolean().optional(),
             appearance: z
@@ -271,6 +272,7 @@ export class TeamBots {
         return {
           slug: row.slug,
           displayName: bot.displayName,
+          kind: bot.kind,
           ...(bot.avatar === undefined
             ? {}
             : {
