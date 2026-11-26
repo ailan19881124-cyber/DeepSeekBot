@@ -422,6 +422,7 @@ export function useBotSidebar(
           <ProjectsBoard
             actions={actions.projects}
             loadWorkers={actions.readWorkers}
+            openAssignment={actions.openSession}
             bots={state.bots
               .filter((bot) => !bot.deleted && bot.sharedBy === undefined)
               .map((bot) => ({

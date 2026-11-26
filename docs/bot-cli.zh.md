@@ -43,14 +43,16 @@ tobs worker-remove --bot <id> --id <worker-id>
 tobs project-create --name <name> [--instructions-file <path>] [--cwd <abs>]
 tobs project-list
 tobs project-show <project-id>
-tobs task-create --project <id> --title <title> --brief <brief> [--worker <id>]
+tobs task-create --project <id> --title <title> --brief <brief> [--worker <id>] [--bot <slug>]
 tobs task-list --project <id> [--state <state>]
 tobs task-update <task-id> --state <state> [--expected-revision <n>]
 ```
 
 运行中的 Host 使用 `--host <url>`，离线 Host 使用 `--home <path>`。项目由 Host 所有者管理，数据保存在现有 operational database。侧栏的「项目」打开看板。任务从 `todo` 开始，经 `doing`、`review` 推进到 `done`。`doing` 和 `review` 可转为 `failed`。版本已变化或状态迁移不合法时，Host 会拒绝更新。
 
-Host 所有者的 assistant Bot 可使用 `project_create`、`task_create`、`task_list`。省略 worker 时沿用该 Bot 的默认执行者。选中的 worker 会记录在任务中。现有 Assignment API 返回 Session ID，本版的看板任务独立创建，`channelId` 保持为空。
+Host 所有者的 assistant Bot 可使用 `project_create`、`task_create`、`task_list`。省略 worker 时沿用该 Bot 的默认执行者。CLI 或看板选中 worker 时，运行中的 Host 会启动 Assignment，把 Session ID 写入 `channelId`，并将任务推进为 `doing`。正常完成后进入 `review`，失败后进入 `failed`。同一 worker ID 出现在多个 Bot 中时，CLI 用 `--bot <slug>` 选定 Bot。Bot 须拥有项目目录的工作区授权。没有项目目录时，Bot 须恰好有一条有效授权。若启动失败，任务留在 `todo` 并显示原因。看板可打开已关联的会话。
+
+设置页的「共享记忆」支持选择目录、启用、刷新只读副本及关闭。Bot 详情页可新建、编辑或删除执行者，并从模型目录和 Bot 自己的技能中选择。
 
 ### 电脑双向关系
 

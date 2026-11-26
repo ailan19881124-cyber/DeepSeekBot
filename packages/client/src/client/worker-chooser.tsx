@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { WorkerTemplate } from '@botharness/host-protocol/workers';
 import type { AssignmentDraft } from '@botharness/host-client/workers';
 import { FormDialog } from './ds/form-dialog.js';
@@ -9,7 +9,7 @@ import type { BotHarnessTranslate } from './locale.js';
 
 export type ReadWorkers = (slug: string) => Promise<WorkerTemplate[]>;
 
-export function useWorkers(load: ReadWorkers | undefined, slug: string | undefined) {
+export function useWorkers(load: ReadWorkers | undefined, slug: string | undefined, revision = 0) {
   const [read, setRead] = useState<{ slug: string; workers?: WorkerTemplate[]; error?: string }>();
   const ref = useMountedResource<HTMLDivElement>(() => {
     if (!load || !slug) return;
@@ -25,7 +25,7 @@ export function useWorkers(load: ReadWorkers | undefined, slug: string | undefin
     return () => {
       active = false;
     };
-  }, [load, slug]);
+  }, [load, slug, revision]);
   return { ref, read: read?.slug === slug ? read : undefined };
 }
 
@@ -38,8 +38,10 @@ export function workerOptions(workers: readonly WorkerTemplate[], t: BotHarnessT
 
 export function WorkerList({
   workers,
+  actionsFor,
   t,
 }: {
+  actionsFor?: (worker: WorkerTemplate) => ReactNode;
   workers: readonly WorkerTemplate[];
   t: BotHarnessTranslate;
 }) {
@@ -57,6 +59,7 @@ export function WorkerList({
             {[...worker.persona].slice(0, 160).join('')}
             {[...worker.persona].length > 160 ? '…' : ''}
           </div>
+          {actionsFor?.(worker)}
         </li>
       ))}
     </ul>

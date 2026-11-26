@@ -1,3 +1,4 @@
+import { latestProjectAssignmentState } from './assignment-lifecycle.js';
 import { workerIdSchema } from '../memory/workers.js';
 import type { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
@@ -29,6 +30,7 @@ const taskInput = z.strictObject({
   title: text(150),
   brief: text(32_000),
   workerId: workerIdSchema.optional(),
+  bot: id.optional(),
 });
 const filterInput = z.strictObject({ projectId: id, state: state.optional() });
 const updateInput = z.strictObject({
@@ -40,7 +42,7 @@ const updateInput = z.strictObject({
 const PROJECT_COLUMNS =
   'id, name, instructions, cwd, created_at AS createdAt, archived_at AS archivedAt';
 const TASK_COLUMNS = `id, project_id AS projectId, title, brief, state, assignee_worker_id AS assigneeWorkerId,
-  channel_id AS channelId, created_at AS createdAt, updated_at AS updatedAt, revision`;
+  channel_id AS channelId, launch_error AS launchError, created_at AS createdAt, updated_at AS updatedAt, revision`;
 
 export class ProjectError extends Error {
   constructor(
@@ -105,6 +107,29 @@ export function createProjectStore(db: OperationalDatabaseModulePort, now = () =
       if (!project) throw new ProjectError('project-not-found', 'Unknown project.');
       return project;
     },
+    recordLaunch(id: string, result: { sessionId: string } | { error: string }): ProjectTask {
+      return write((sql) => {
+        if ('sessionId' in result) {
+          const state = latestProjectAssignmentState(sql, result.sessionId);
+          sql
+            .prepare(`
+            UPDATE tasks SET channel_id = ?, state = CASE WHEN state IN ('todo', 'doing') THEN ? ELSE state END,
+              launch_error = NULL, updated_at = ?, revision = revision + 1 WHERE id = ? AND channel_id IS NULL
+          `)
+            .run(result.sessionId, state, now().toISOString(), id);
+        } else {
+          sql
+            .prepare(`
+            UPDATE tasks SET launch_error = ?, updated_at = ?, revision = revision + 1
+              WHERE id = ? AND channel_id IS NULL
+          `)
+            .run(result.error, now().toISOString(), id);
+        }
+        return sql
+          .prepare(`SELECT ${TASK_COLUMNS} FROM tasks WHERE id = ?`)
+          .get(id) as unknown as ProjectTask;
+      });
+    },
     createTask(raw: unknown): ProjectTask {
       const input = taskInput.parse(raw);
       const at = now().toISOString();
@@ -116,6 +141,7 @@ export function createProjectStore(db: OperationalDatabaseModulePort, now = () =
         state: 'todo',
         assigneeWorkerId: input.workerId ?? null,
         channelId: null,
+        launchError: null,
         createdAt: at,
         updatedAt: at,
         revision: 1,

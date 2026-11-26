@@ -58,3 +58,14 @@ export async function startAssignment(
   if (outcome?.outcome !== 'created')
     throw new Error(text(outcome?.message) ? outcome.message : 'Assignment creation failed.');
 }
+
+export async function saveWorker(
+  host: HostCall,
+  slug: string,
+  worker: WorkerTemplate,
+): Promise<void> {
+  await host.call('workerTemplates', { action: 'set', bot: slug, value: worker });
+}
+export async function removeWorker(host: HostCall, slug: string, id: string): Promise<void> {
+  await host.call('workerTemplates', { action: 'remove', bot: slug, value: id });
+}

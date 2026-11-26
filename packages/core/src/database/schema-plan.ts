@@ -1,3 +1,4 @@
+import { PROJECT_ASSIGNMENT_MIGRATION } from './migrations/project-assignment.js';
 import { PROJECTS_MIGRATION } from './migrations/projects.js';
 import {
   MESSAGING_TRACER_MIGRATION,
@@ -438,4 +439,5 @@ export const BOT_HARNESS_SCHEMA_PLAN = defineSchemaPlan([
   PENDING_ORCHESTRATOR_REPLACEMENTS_MIGRATION,
   TOB_MEMORY_LEASE_MIGRATION,
   PROJECTS_MIGRATION,
+  PROJECT_ASSIGNMENT_MIGRATION,
 ]);

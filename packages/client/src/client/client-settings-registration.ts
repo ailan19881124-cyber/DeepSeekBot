@@ -1,3 +1,4 @@
+import { SharedMemorySettings } from './shared-memory-settings.js';
 import type { Context as ClientContext } from '@deepseek-ai/cordis';
 import {
   BOT_MODE_NAMESPACE,
@@ -183,6 +184,19 @@ export function registerClientSettings(
           }),
         },
         KeyboardSettings,
+      ),
+    );
+    settingsCtx.slots.inject('botharness.settings.section', () =>
+      settingsCtx.slots.register(
+        {
+          name: 'botharness.settings.section',
+          id: BOT_SETTINGS_SECTIONS.sharedMemory,
+          order: 18,
+          label: () => t('sharedMemory.title'),
+          locale: LOCALE_NS,
+          inject: () => ({ actions }),
+        },
+        SharedMemorySettings,
       ),
     );
     registerModelSettingsSections(settingsCtx, { t, prefs, actions, call, store });

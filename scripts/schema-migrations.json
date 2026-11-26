@@ -742,5 +742,9 @@
   {
     "id": "projects-and-tasks",
     "sha256": "aca89e0ee3b0c0ed3a4feb9133411a896b0fce03e636545a9b1db1a63dcddf5f"
+  },
+  {
+    "id": "project-task-assignment",
+    "sha256": "65c82d575b798c4f79b3a9bfaaa38608c6cdf0dcdf02a5a72b15a9b43f7ceaef"
   }
 ]

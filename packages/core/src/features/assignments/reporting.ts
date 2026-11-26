@@ -1,3 +1,4 @@
+import { settleProjectTask } from '../../projects/assignment-lifecycle.js';
 import {
   readAcceptedAssignmentReport,
   type AssignmentReportRead,
@@ -205,9 +206,10 @@ export function createAssignmentReporting({
         `,
           )
           .run(id, botSlug, rule.revision, rule.wake);
+        settleProjectTask(database, sessionId, 'failed', at);
         return rule.wake === 'immediate';
       },
-      ['assignments', 'source-event', 'bot-inbox'],
+      ['assignments', 'source-event', 'bot-inbox', 'projects'],
     );
     if (created) scheduleHarvest(botSlug);
   }
@@ -288,8 +290,9 @@ export function createAssignmentReporting({
       `,
           )
           .run(id, botSlug, rule.revision, rule.wake);
+        settleProjectTask(database, sessionId, 'review', at);
       },
-      ['source-event', 'bot-inbox'],
+      ['source-event', 'bot-inbox', 'projects'],
     );
   }
 
@@ -423,9 +426,12 @@ export function createAssignmentReporting({
           `,
           )
           .run(sourceEventId, botSlug, sourceRule.revision, sourceRule.wake);
+        if (input.state === 'failed') settleProjectTask(database, sessionId, 'failed', at);
+        else if (input.state === 'completed' && execution === undefined)
+          settleProjectTask(database, sessionId, 'review', at);
         return sourceRule.wake;
       },
-      ['assignments', 'assignment-report', 'source-event', 'bot-inbox'],
+      ['assignments', 'assignment-report', 'source-event', 'bot-inbox', 'projects'],
     );
     if (
       reportWake === 'immediate' ||

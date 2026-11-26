@@ -1,6 +1,7 @@
+import { WorkersManager } from './worker-editor.js';
 import { useMountedResource } from './mounted-resource.js';
 import { Button } from './ds/button.js';
-import { useWorkers, WorkCreateDialog, WorkerList } from './worker-chooser.js';
+import { useWorkers, WorkCreateDialog } from './worker-chooser.js';
 import { ProfileActivitySection, ProfileCard, ProfilePanel } from './ds/profile-panel.js';
 import { useMemo, useState, type ReactElement } from 'react';
 
@@ -56,9 +57,11 @@ export function ProfileView({
   const [creatingAssignment, setCreatingAssignment] = useState(false);
   const [grants, setGrants] = useState<Array<{ value: string; label: string }>>();
   const [grantError, setGrantError] = useState<string>();
+  const [workersVersion, setWorkersVersion] = useState(0);
   const { read: workers, ref: workersRef } = useWorkers(
     actions.readWorkers,
     bot.deleted || bot.sharedBy !== undefined ? undefined : bot.slug,
+    workersVersion,
   );
   const grantRef = useMountedResource<HTMLDivElement>(() => {
     if (!creatingAssignment || !actions.assignmentGrants) return;
@@ -136,7 +139,13 @@ export function ProfileView({
         <ProfileCard label={t('projects.workers')}>
           <div ref={workersRef}>
             {workers?.workers ? (
-              <WorkerList workers={workers.workers} t={t} />
+              <WorkersManager
+                slug={bot.slug}
+                workers={workers.workers}
+                actions={actions}
+                t={t}
+                refresh={() => setWorkersVersion((value) => value + 1)}
+              />
             ) : (
               <div role="status">{workers?.error ?? t('projects.loading')}</div>
             )}

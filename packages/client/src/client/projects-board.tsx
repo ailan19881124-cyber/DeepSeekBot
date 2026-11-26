@@ -53,12 +53,14 @@ export function ProjectsBoard({
   bots,
   t,
   onClose,
+  openAssignment,
 }: {
   actions: ProjectActions;
   loadWorkers: ReadWorkers | undefined;
   bots: readonly BotOption[];
   t: BotHarnessTranslate;
   onClose(): void;
+  openAssignment?: ((sessionId: string) => void) | undefined;
 }) {
   const [projects, setProjects] = useState<ProjectSummary[]>();
   const [selected, setSelected] = useState<string>();
@@ -95,8 +97,33 @@ export function ProjectsBoard({
         if (active) report(cause);
       },
     );
+    const timer = setInterval(() => {
+      void actions.tasks(selected).then(
+        (tasks) => {
+          if (!active) return;
+          setDetail((current) =>
+            current?.project.id === selected
+              ? {
+                  ...current,
+                  tasks: [
+                    ...tasks.map(
+                      (task) =>
+                        current.tasks.find(
+                          (item) => item.id === task.id && item.revision > task.revision,
+                        ) ?? task,
+                    ),
+                    ...current.tasks.filter((item) => !tasks.some((task) => task.id === item.id)),
+                  ],
+                }
+              : current,
+          );
+        },
+        () => {},
+      );
+    }, 4000);
     return () => {
       active = false;
+      clearInterval(timer);
     };
   }, [actions, selected]);
   const workerSlug = workerBot || bots[0]?.id;
@@ -199,6 +226,19 @@ export function ProjectsBoard({
                         .map((task) => (
                           <article key={task.id} {...stylex.props(styles.card, styles.stack)}>
                             <strong>{task.title}</strong>
+                            {task.launchError ? <div role="status">{task.launchError}</div> : null}
+                            {task.channelId && openAssignment ? (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  openAssignment(task.channelId!);
+                                  onClose();
+                                }}
+                              >
+                                {t('projects.openAssignment')}
+                              </Button>
+                            ) : null}
                             <p {...stylex.props(styles.prose)}>{task.brief}</p>
                             {task.assigneeWorkerId ? (
                               <span {...stylex.props(styles.meta)}>{task.assigneeWorkerId}</span>
@@ -257,7 +297,7 @@ export function ProjectsBoard({
             onClose={() => setCreating(undefined)}
             onCreate={async ({ title, brief, workerId }) => {
               const id = detail.project.id;
-              const task = await actions.createTask(id, title, brief, workerId);
+              const task = await actions.createTask(id, title, brief, workerId, workerSlug);
               setDetail((current) =>
                 current?.project.id === id
                   ? { ...current, tasks: [...current.tasks, task] }

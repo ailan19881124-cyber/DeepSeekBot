@@ -1,4 +1,5 @@
-import { runProjectOperation } from '../projects/operations.js';
+import { launchProjectAssignment } from '../projects/launch.js';
+import { launchCreatedTask, runProjectOperation } from '../projects/operations.js';
 import type { ProjectStore } from '../projects/store.js';
 import { dirname } from 'node:path';
 import { createSharedMemory } from '../memory/shared-memory.js';
@@ -423,7 +424,7 @@ export interface BridgeMethods
 
   botModes: BotModeBridgeMethods['botModes'];
   botModeDefaultSet: BotModeBridgeMethods['botModeDefaultSet'];
-  projectOperation(payload: unknown): ReturnType<typeof runProjectOperation>;
+  projectOperation(payload: unknown): Promise<ReturnType<typeof runProjectOperation>>;
   workerTemplates(input: unknown): ReturnType<typeof runWorkerOperation>;
   sharedMemory(action: unknown, dir?: unknown): ReturnType<typeof runSharedMemoryOperation>;
   botModeSet: BotModeBridgeMethods['botModeSet'];
@@ -727,12 +728,22 @@ function buildBridgeMethods(
     listItem,
   );
   const methods: BridgeMethods = {
-    projectOperation(payload) {
+    async projectOperation(payload) {
       if (!isHostOwner() || human.caller === 'bot') throw new TeamError('permission-required');
       if (!deps.projects)
         return { ok: false, error: { code: 'unavailable', message: 'Projects are unavailable.' } };
       const { action, input } = asObject(payload);
-      return runProjectOperation(deps.projects, action, input);
+      const result = runProjectOperation(deps.projects, action, input);
+      if (action !== 'task-create') return result;
+      return launchCreatedTask(deps.projects, result, (project, task) =>
+        launchProjectAssignment(
+          { registry: deps.registry, runtime: deps.runtime, grants: deps.grants },
+          human,
+          project,
+          task,
+          input,
+        ),
+      );
     },
     workerTemplates(input) {
       if (human.caller === 'bot') throw new TeamError('permission-required');

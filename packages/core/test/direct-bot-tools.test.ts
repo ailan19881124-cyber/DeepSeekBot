@@ -1,5 +1,13 @@
+import { projectToolsFor } from '../src/projects/tools.js';
+import { createProjectStore } from '../src/projects/store.js';
+import { createBridgeMethods } from '../src/bridge/methods.js';
+import { createBotStateTracker } from '../src/state/bot-state.js';
+import { createTestRosterStore } from './roster-fixture.js';
+import type { Project, ProjectTask } from '@botharness/host-protocol/projects';
+import type { AssignmentAgentRun } from '../src/features/assignments/runtime-types.js';
+import { setWorker } from '../src/memory/workers.js';
 import { OWNER_HUMAN_CONTEXT } from '../src/humans/context.js';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
@@ -41,6 +49,7 @@ function setup(
   >[0]['observeDirectToolCleanupFailure'],
 ) {
   const home = createTempRoot('botharness-direct-tools-');
+  mkdirSync(join(home, 'memory'));
   const registry = createTestRegistry({ rootDir: join(home, 'bots'), now: FIXED_NOW });
   expect(registry.create({ slug: 'ada', displayName: 'Ada' }).ok).toBe(true);
   const channels = createChannelStore({ rootDir: join(home, 'channels'), now: FIXED_NOW });
@@ -51,7 +60,16 @@ function setup(
   const host = suppressAssignmentReports
     ? new FakeAgentHost({ kind: 'completed' }, { onTurn: async () => undefined })
     : new FakeAgentHost({ kind: 'completed' });
+  const projects = createProjectStore(attachOperationalModule(owner, 'projects'));
   const agents = createDshBotAgentAdapter({
+    projectTools: (slug) =>
+      projectToolsFor(
+        projects,
+        () => (slug ? registry.get(slug) : undefined),
+        () => true,
+        (slug) => registry.memoryDirFor(slug),
+        slug === undefined,
+      ),
     agents: host,
     ...(observeDirectToolCleanupFailure === undefined ? {} : { observeDirectToolCleanupFailure }),
     onAgentSetup: (ctx) => {
@@ -90,15 +108,16 @@ function setup(
       });
     },
     defaultModel: { currentSelection: () => ({ provider: 'test', model: 'test' }) },
-    orchestratorCwd: () => join(home, 'memory'),
+    orchestratorCwd: (bot) => registry.memoryDirFor(bot.slug) ?? join(home, 'memory'),
     ensureWorkspace: () => undefined,
     subagentTools: () => createBotSubagentModelTools({} as Context, () => undefined),
   });
   const ownership = createSessionOwnership(attachOperationalModule(owner, 'session-ownership'));
+  const grants = createTestWorkspaceGrants(owner, home);
   const runtime = createBotRuntime({
     database: owner,
     ownership,
-    grants: createTestWorkspaceGrants(owner, home),
+    grants,
     registry,
     channels,
     agents,
@@ -106,6 +125,7 @@ function setup(
   });
   return {
     runtime,
+    grants,
     channels,
     dm,
     host,
@@ -326,6 +346,101 @@ describe('direct Bot tool runner', () => {
     await expect(
       runtime.runDirectBotTool!('ada', 'channel_list', {}, signal),
     ).rejects.toMatchObject({ code: 'bot-paused' });
+  });
+
+  it('starts a project assignment and synchronizes completion and failure', async () => {
+    const { owner, runtime, registry, grants, agents, channels, ownership } = setup();
+    const database = attachOperationalModule(owner, 'projects');
+    const bridge = createBridgeMethods(OWNER_HUMAN_CONTEXT, {
+      registry,
+      runtime,
+      grants,
+      channels,
+      ownership,
+      states: createBotStateTracker(),
+      roster: createTestRosterStore({ database: owner }),
+      projects: createProjectStore(database),
+    });
+    async function request<T>(action: string, input: unknown): Promise<T> {
+      const result = await bridge.projectOperation({ action, input });
+      if (!result.ok) throw new Error(result.error.message);
+      return result.value as T;
+    }
+    const { project } = await request<{ project: Project }>('project-create', {
+      name: 'Release validation',
+    });
+    setWorker(registry.memoryDirFor('ada')!, {
+      id: 'reviewer',
+      name: 'Reviewer',
+      persona: 'Check release notes.',
+      model: 'default',
+    });
+    const runs = new Map<string, AssignmentAgentRun>();
+    vi.spyOn(agents, 'runAssignment').mockImplementation(async (run) => {
+      runs.set(run.sessionId, run);
+    });
+    async function create(worker?: string) {
+      const input = {
+        projectId: project.id,
+        title: 'Check notes',
+        brief: 'Verify changes',
+        workerId: worker,
+      };
+      return (await request<{ task: ProjectTask }>('task-create', input)).task;
+    }
+    async function read(id: string) {
+      const { tasks } = await request<{ tasks: ProjectTask[] }>('task-list', {
+        projectId: project.id,
+      });
+      return tasks.find((task) => task.id === id)!;
+    }
+    try {
+      expect(await create()).toMatchObject({ state: 'todo', channelId: null, revision: 1 });
+      expect(await create('missing')).toMatchObject({
+        state: 'todo',
+        channelId: null,
+        launchError: 'No active Bot with this worker was found.',
+      });
+      for (const [state, expected] of [
+        ['completed', 'review'],
+        ['failed', 'failed'],
+      ] as const) {
+        const task = await create('reviewer');
+        expect(task, task.launchError ?? undefined).toMatchObject({ state: 'doing', revision: 2 });
+        expect(task.channelId).toBeTruthy();
+        const sessionId = task.channelId!;
+        expect(runtime.getAssignment!('ada', sessionId)).toBeDefined();
+        process.stdout.write(
+          JSON.stringify({
+            taskId: task.id,
+            channelId: sessionId,
+            assignmentExists: true,
+            state: task.state,
+          }) + '\n',
+        );
+        await vi.waitFor(() => expect(runs.has(sessionId)).toBe(true));
+        const run = runs.get(sessionId)!;
+        if (state === 'completed') {
+          await run.report({ state, summary: 'Simulated Assignment outcome' }, { turn: 1 });
+          expect((await read(task.id)).state).toBe('doing');
+          run.completedTurn!({ turn: 1, endSeq: 0 });
+        } else {
+          run.failedTurn!({ turn: 1, endSeq: 0 });
+        }
+        const settled = await read(task.id);
+        expect(settled).toMatchObject({ state: expected, channelId: sessionId, revision: 3 });
+        process.stdout.write(
+          JSON.stringify({
+            taskId: settled.id,
+            channelId: settled.channelId,
+            assignmentLifecycle: state,
+            state: settled.state,
+          }) + '\n',
+        );
+      }
+    } finally {
+      await runtime.close();
+    }
   });
 
   it('records silent direct Assignment notices separately from native reports', async () => {

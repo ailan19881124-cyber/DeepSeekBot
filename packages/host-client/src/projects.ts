@@ -5,7 +5,7 @@ import {
   type ProjectTask,
   type TaskState,
 } from '@botharness/host-protocol/projects';
-import { answer, answerRecord, count, record, text, type HostCall } from './host-answer';
+import { optional, answer, answerRecord, count, record, text, type HostCall } from './host-answer';
 
 const nullableText = (value: unknown) => value === null || text(value);
 function isProject(value: unknown): value is Project {
@@ -32,6 +32,7 @@ function isTask(value: unknown): value is ProjectTask {
     TASK_STATES.some((state) => state === row.state) &&
     nullableText(row.assigneeWorkerId) &&
     nullableText(row.channelId) &&
+    optional(row.launchError, nullableText) &&
     count(row.revision)
   );
 }
@@ -69,10 +70,22 @@ export function projectActions(host: HostCall) {
         'task-list',
       );
     },
-    async createTask(projectId: string, title: string, brief: string, workerId?: string) {
+    async createTask(
+      projectId: string,
+      title: string,
+      brief: string,
+      workerId?: string,
+      bot?: string,
+    ) {
       return answer(
-        (await call('task-create', { projectId, title, brief, ...(workerId ? { workerId } : {}) }))
-          .task,
+        (
+          await call('task-create', {
+            projectId,
+            title,
+            brief,
+            ...(workerId ? { workerId, ...(bot ? { bot } : {}) } : {}),
+          })
+        ).task,
         isTask,
         'task-create',
       );

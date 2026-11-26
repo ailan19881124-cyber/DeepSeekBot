@@ -1,16 +1,20 @@
 import { attachOperationalModule } from '../database/owner.js';
 import { openRegistry } from '../features/personabots/cli-offline.js';
-import { runProjectOperation } from './operations.js';
+import { launchCreatedTask, runProjectOperation } from './operations.js';
 import { createProjectStore } from './store.js';
 
-export function runOfflineProjectOperation(home: string, action: string, input: unknown) {
+export async function runOfflineProjectOperation(home: string, action: string, input: unknown) {
   const { owner } = openRegistry(home);
   try {
-    return runProjectOperation(
-      createProjectStore(attachOperationalModule(owner, 'projects')),
-      action,
-      input,
-    );
+    const projects = createProjectStore(attachOperationalModule(owner, 'projects'));
+    const result = runProjectOperation(projects, action, input);
+    return action === 'task-create'
+      ? await launchCreatedTask(projects, result, async () => {
+          throw new Error(
+            'Assignment execution requires a running Host. Use --host to launch a worker.',
+          );
+        })
+      : result;
   } finally {
     owner.close();
   }

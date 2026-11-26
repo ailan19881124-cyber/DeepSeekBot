@@ -31,6 +31,7 @@ export interface ProjectTask {
   state: TaskState;
   assigneeWorkerId: string | null;
   channelId: string | null;
+  launchError?: string | null;
   createdAt: string;
   updatedAt: string;
   revision: number;

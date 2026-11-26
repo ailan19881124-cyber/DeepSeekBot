@@ -53,7 +53,8 @@ it('runs the project and task CLI against the operational database', async () =>
     assigneeWorkerId: 'reviewer',
     channelId: null,
     state: 'todo',
-    revision: 1,
+    revision: 2,
+    launchError: expect.stringContaining('requires a running Host'),
   });
   expect((await call('project-list')).json).toMatchObject({
     projects: [{ id, taskCount: 1, updatedAt: task.updatedAt }],
@@ -79,10 +80,10 @@ it('runs the project and task CLI against the operational database', async () =>
       '--state',
       next,
       '--expected-revision',
-      String(index + 1),
+      String(index + 2),
     );
     expect(changed.code, changed.stderr).toBe(0);
-    expect(changed.json.task).toMatchObject({ state: next, revision: index + 2 });
+    expect(changed.json.task).toMatchObject({ state: next, revision: index + 3 });
   }
   expect((await call('task-update', task.id, '--state', 'todo')).json.error.code).toBe(
     'invalid-transition',

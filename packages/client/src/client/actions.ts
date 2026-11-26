@@ -1,3 +1,8 @@
+import {
+  sharedMemoryActions,
+  type SharedMemoryActions,
+} from '@botharness/host-client/shared-memory';
+import { saveWorker, removeWorker } from '@botharness/host-client/workers';
 import { projectActions, type ProjectActions } from '@botharness/host-client/projects';
 import {
   loadWorkers,
@@ -179,6 +184,9 @@ export interface BridgeActions
     BotActions,
     ChannelActions {
   projects?: ProjectActions;
+  sharedMemory?: SharedMemoryActions;
+  saveWorker?(slug: string, worker: WorkerTemplate): Promise<void>;
+  removeWorker?(slug: string, id: string): Promise<void>;
   readWorkers?(slug: string): Promise<WorkerTemplate[]>;
   startAssignment?(slug: string, draft: AssignmentDraft): Promise<void>;
   assignmentGrants?(slug: string): Promise<Array<{ value: string; label: string }>>;
@@ -547,6 +555,9 @@ export function createActions(
   );
   const actions: BridgeActions = {
     projects: projectActions(host),
+    sharedMemory: sharedMemoryActions(host),
+    saveWorker: (slug, worker) => saveWorker(host, slug, worker),
+    removeWorker: (slug, id) => removeWorker(host, slug, id),
     readWorkers: (slug) => loadWorkers(host, slug),
     startAssignment: (slug, draft) => startAssignment(host, slug, draft),
     assignmentGrants: async (slug) => {

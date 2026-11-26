@@ -31,3 +31,25 @@ export function runProjectOperation(
     throw error;
   }
 }
+
+export async function launchCreatedTask(
+  store: ProjectStore,
+  result: BridgeResult<unknown>,
+  launch: (
+    project: import('@botharness/host-protocol/projects').Project,
+    task: import('@botharness/host-protocol/projects').ProjectTask,
+  ) => Promise<string>,
+): Promise<BridgeResult<unknown>> {
+  if (!result.ok) return result;
+  const { task } = result.value as {
+    task: import('@botharness/host-protocol/projects').ProjectTask;
+  };
+  if (!task.assigneeWorkerId) return result;
+  let outcome: { sessionId: string } | { error: string };
+  try {
+    outcome = { sessionId: await launch(store.showProject(task.projectId), task) };
+  } catch (error) {
+    outcome = { error: error instanceof Error ? error.message : String(error) };
+  }
+  return { ok: true, value: { task: store.recordLaunch(task.id, outcome) } };
+}

@@ -43,14 +43,16 @@ Pass `worker_id` to `create_assignment` to use a template for a new Assignment. 
 tobs project-create --name <name> [--instructions-file <path>] [--cwd <abs>]
 tobs project-list
 tobs project-show <project-id>
-tobs task-create --project <id> --title <title> --brief <brief> [--worker <id>]
+tobs task-create --project <id> --title <title> --brief <brief> [--worker <id>] [--bot <slug>]
 tobs task-list --project <id> [--state <state>]
 tobs task-update <task-id> --state <state> [--expected-revision <n>]
 ```
 
 Use `--host <url>` to work with a running Host or `--home <path>` for an offline Host. Project data belongs to the Host owner and lives in its operational database. The Projects sidebar opens the board. Tasks start in `todo`, move through `doing` and `review` to `done`, and may move from `doing` or `review` to `failed`. A stale `--expected-revision` or an invalid transition is refused.
 
-Host-owner assistant Bots can use `project_create`, `task_create`, and `task_list`. Omitting a worker leaves the Bot's default selection in effect. A selected worker is recorded on the task. The Assignment API returns a Session id, so this version leaves `channelId` empty and creates the board task independently of Assignment execution.
+Host-owner assistant Bots can use `project_create`, `task_create`, and `task_list`. Omitting a worker leaves the Bot's default selection in effect. Selecting a worker in the CLI or board starts an Assignment on the running Host, stores its Session ID in `channelId`, and advances the task to `doing`. Completion moves it to `review`, and failure moves it to `failed`. Use `--bot <slug>` if multiple Bots define the worker ID. The Bot needs a workspace grant for the project directory, or exactly one active grant if the project has no directory. A launch error leaves the card in `todo` and records the reason. Open the linked Session from the board.
+
+In Settings, Shared Memory lets you choose the directory, enable sharing, refresh read-only copies, or disable sharing. The Bot profile lets you create, edit, or delete workers and select models and skills available to the Bot.
 
 ### Reciprocal computer relationships
 

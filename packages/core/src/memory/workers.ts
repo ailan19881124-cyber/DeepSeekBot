@@ -1,3 +1,4 @@
+import { WORKER_ID_PATTERN } from '@botharness/host-protocol/workers';
 import type { WorkerTemplate } from '@botharness/host-protocol/workers';
 import { lstatSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { extname, join } from 'node:path';
@@ -6,7 +7,7 @@ import { z } from 'zod';
 import { atomicWriteFile } from '../fs/atomic-write.js';
 import { resolveMemoryPath } from './jail.js';
 
-export const workerIdSchema = z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/u);
+export const workerIdSchema = z.string().regex(WORKER_ID_PATTERN);
 const text = (max: number) => z.string().trim().min(1).max(max);
 const workerSchema = z.strictObject({
   id: workerIdSchema,

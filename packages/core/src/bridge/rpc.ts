@@ -182,8 +182,8 @@ const rpcMethods = {
   ...promptInspectionRpc,
   ...sessionControlRpc,
   ...modelConfigurationRpc,
-  projectOperation(this: BridgeRpcReceiver, action: unknown, input?: unknown) {
-    return unwrap(this.methods.projectOperation({ action, input }));
+  async projectOperation(this: BridgeRpcReceiver, action: unknown, input?: unknown) {
+    return unwrap(await this.methods.projectOperation({ action, input }));
   },
   workerTemplates(this: BridgeRpcReceiver, action: unknown, bot: unknown, value?: unknown) {
     return unwrap(this.methods.workerTemplates({ action, slug: bot, value }));

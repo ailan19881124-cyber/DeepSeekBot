@@ -42,6 +42,7 @@ export async function runProjectCli(
       title: values.title,
       brief: values.brief,
       workerId: values.worker,
+      bot: values.bot,
     };
   if (command === 'task-list') input = { projectId: values.project, state: values.state };
   if (command === 'task-update') {
@@ -63,7 +64,7 @@ export async function runProjectCli(
   }
   if (values['token-file'] !== undefined)
     throw usageError('--token-file requires an online Host target.');
-  const result = runOfflineProjectOperation(resolveHome(values, io), command, input);
+  const result = await runOfflineProjectOperation(resolveHome(values, io), command, input);
   if (!result.ok) throw new CliFailure(result.error.code, result.error.message, 1);
   return result.value;
 }
