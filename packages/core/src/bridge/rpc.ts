@@ -182,6 +182,9 @@ const rpcMethods = {
   ...promptInspectionRpc,
   ...sessionControlRpc,
   ...modelConfigurationRpc,
+  projectOperation(this: BridgeRpcReceiver, action: unknown, input?: unknown) {
+    return unwrap(this.methods.projectOperation({ action, input }));
+  },
   workerTemplates(this: BridgeRpcReceiver, action: unknown, bot: unknown, value?: unknown) {
     return unwrap(this.methods.workerTemplates({ action, slug: bot, value }));
   },
@@ -629,6 +632,7 @@ markRemoteMethods(BotharnessBridgeService.prototype, [
   'standingLimitsSet',
   'sharedMemory',
   'workerTemplates',
+  'projectOperation',
   'botAvatarSet',
   'botAppearanceSet',
   'botPrimaryColorSet',

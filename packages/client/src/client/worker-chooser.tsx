@@ -70,6 +70,7 @@ export function WorkCreateDialog({
   t,
   workers,
   workerError,
+  workerScope,
   grants,
   onClose,
   onCreate,
@@ -78,6 +79,13 @@ export function WorkCreateDialog({
   t: BotHarnessTranslate;
   workers: readonly WorkerTemplate[];
   workerError?: string | undefined;
+  workerScope?:
+    | {
+        value: string;
+        options: readonly { value: string; label: string }[];
+        onChange(value: string): void;
+      }
+    | undefined;
   grants?: readonly { value: string; label: string }[] | undefined;
   onClose(): void;
   onCreate(draft: AssignmentDraft): Promise<void>;
@@ -135,6 +143,18 @@ export function WorkCreateDialog({
           value={grant}
           options={[{ value: '', label: t('projects.selectWorkspace') }, ...grants]}
           onChange={setGrant}
+        />
+      ) : null}
+      {workerScope ? (
+        <Select
+          label={t('projects.workerBot')}
+          value={workerScope.value}
+          options={workerScope.options}
+          onChange={(value) => {
+            setWorker('');
+            workerScope.onChange(value);
+          }}
+          disabled={busy}
         />
       ) : null}
       <Select

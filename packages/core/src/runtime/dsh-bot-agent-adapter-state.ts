@@ -48,6 +48,7 @@ export class DshBotAgentAdapterState {
   readonly observeTurnFailure: DshBotAgentAdapterOptions['observeTurnFailure'];
   readonly turnRefusal: DshBotAgentAdapterOptions['turnRefusal'];
   readonly promptText: (sessionId: string) => PromptText;
+  readonly projectTools: DshBotAgentAdapterOptions['projectTools'];
   readonly workerPrompt: ((sessionId: string) => string | undefined) | undefined;
   readonly hasSession: DshBotAgentAdapterOptions['hasSession'];
   readonly onGenuiDiagnostic: DshBotAgentAdapterOptions['onGenuiDiagnostic'];
@@ -131,6 +132,7 @@ export class DshBotAgentAdapterState {
     this.#checkModelRoute = options.prepareModelRoute;
     this.observeTurnFailure = options.observeTurnFailure;
     this.turnRefusal = options.turnRefusal;
+    this.projectTools = options.projectTools;
     this.workerPrompt = options.workerPrompt;
     this.promptText = options.promptText ?? (() => DEFAULT_PROMPT_TEXT);
     this.hasSession = options.hasSession;

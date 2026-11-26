@@ -22,6 +22,7 @@ import {
   ONLINE_MANAGEMENT_COMMANDS,
   runOnlineManagement,
 } from './cli-management.js';
+import { PROJECT_COMMANDS, runProjectCli } from './cli-projects.js';
 import { runWorkerCli } from './cli-workers.js';
 import { runSharedMemoryCli } from './cli-shared-memory.js';
 import { BOT_CREATE_HELP } from '../features/personabots/cli-help.js';
@@ -304,6 +305,10 @@ export async function runBotCreateCli(
     if (!hasCliDeclaration(command)) throw usageError('Unknown command.');
     if (command === 'marketplace-blocklist') {
       out.stdout(JSON.stringify(await runMarketplaceBlocklist(rest, io.env), null, 2));
+      return 0;
+    }
+    if (PROJECT_COMMANDS.has(command)) {
+      out.stdout(JSON.stringify(await runProjectCli(command, rest, values, io), null, 2));
       return 0;
     }
     if (command === 'worker-list' || command === 'worker-set' || command === 'worker-remove') {

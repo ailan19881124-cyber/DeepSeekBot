@@ -1,3 +1,4 @@
+import { createProjectStore } from './projects/store.js';
 import * as profileStorage from './features/profile-storage/plugin.js';
 import * as personabotsFeature from './features/personabots/plugin.js';
 import * as tobFeature from './features/tob/plugin.js';
@@ -418,6 +419,7 @@ function initializeCore(
   startup.enter('bot-schedules', 'start');
   botSchedules.start(schedules, operationalDatabase);
   return {
+    projects: createProjectStore(attachOperationalModule(operationalDatabase, 'projects')),
     voiceProviders,
     voiceMessages,
     voiceSpeech,

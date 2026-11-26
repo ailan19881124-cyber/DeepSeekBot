@@ -1,3 +1,4 @@
+import { projectToolsFor } from '../../projects/tools.js';
 import * as tobFeature from '../tob/plugin.js';
 import { engineAccountKey } from '@botharness/host-protocol/subscription-engine';
 import { defaultSpaceMemoryPath } from '../../workspaces/space-memory.js';
@@ -608,6 +609,14 @@ export function createHostAgentAdapter(
     agents: ctx.agents,
     releaseNativeAgent: (agent) => ctx.get('agentLoop')?.releaseIdleAgent?.(agent),
     promptText: (sessionId) => deps.core.prompts.textForSession(sessionId),
+    projectTools: (slug) =>
+      projectToolsFor(
+        deps.core.projects,
+        () => (slug === undefined ? undefined : deps.core.registry.get(slug)),
+        (bot) => deps.core.team.isOwner(humanContext(bot.ownerHumanId ?? 'local-human')),
+        (botSlug) => deps.core.registry.memoryDirFor(botSlug),
+        slug === undefined,
+      ),
     workerPrompt: (sessionId) => deps.core.ownership.workerPrompt(sessionId),
     defaultModel,
     observeTurnFailure: (provider, code) => providerCredentials.observe(provider, code),

@@ -145,6 +145,7 @@ export interface DshBotAgentAdapterOptions {
   turnRefusal?: (sessionId: string) => string | Error | undefined;
 
   promptText?: (sessionId: string) => PromptText;
+  projectTools?: (botSlug?: string) => ToolDefinition[];
   workerPrompt?: (sessionId: string) => string | undefined;
 
   preparationTimeoutMs?: number;

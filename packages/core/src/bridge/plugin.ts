@@ -143,6 +143,7 @@ export function createHostBridgeDependencies(
   } = deps;
   const { botModeSettings, productBotMode, installedBotModes, botModeOf } = botModes;
   return {
+    projects: core.projects,
     team,
     skills: skills.catalog,
     hostVersion: () => release.version(),

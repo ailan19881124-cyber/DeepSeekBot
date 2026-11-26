@@ -1,3 +1,5 @@
+import { runProjectOperation } from '../projects/operations.js';
+import type { ProjectStore } from '../projects/store.js';
 import { dirname } from 'node:path';
 import { createSharedMemory } from '../memory/shared-memory.js';
 import { runWorkerOperation } from '../features/personabots/worker-operation.js';
@@ -421,6 +423,7 @@ export interface BridgeMethods
 
   botModes: BotModeBridgeMethods['botModes'];
   botModeDefaultSet: BotModeBridgeMethods['botModeDefaultSet'];
+  projectOperation(payload: unknown): ReturnType<typeof runProjectOperation>;
   workerTemplates(input: unknown): ReturnType<typeof runWorkerOperation>;
   sharedMemory(action: unknown, dir?: unknown): ReturnType<typeof runSharedMemoryOperation>;
   botModeSet: BotModeBridgeMethods['botModeSet'];
@@ -445,6 +448,7 @@ export interface BridgeMethodsDeps
     AssignmentsBridgeDeps,
     MemoryBridgeDeps {
   team?: TeamService;
+  projects?: ProjectStore;
   callText?: (input: CallTextInput) => Promise<CallTextHarvest | undefined>;
   botContext?(slug: string): Promise<BotContextWindow>;
   idleCompaction?: IdleCompactionDeps;
@@ -723,6 +727,13 @@ function buildBridgeMethods(
     listItem,
   );
   const methods: BridgeMethods = {
+    projectOperation(payload) {
+      if (!isHostOwner() || human.caller === 'bot') throw new TeamError('permission-required');
+      if (!deps.projects)
+        return { ok: false, error: { code: 'unavailable', message: 'Projects are unavailable.' } };
+      const { action, input } = asObject(payload);
+      return runProjectOperation(deps.projects, action, input);
+    },
     workerTemplates(input) {
       if (human.caller === 'bot') throw new TeamError('permission-required');
       const { action, slug, value } = (input ?? {}) as Record<string, unknown>;

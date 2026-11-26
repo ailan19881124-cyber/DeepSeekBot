@@ -59,7 +59,10 @@ import type { UsageProjection } from './usage/usage.js';
 import type { MessagePerfTracker } from './usage/message-perf.js';
 import type { PromptSettings } from './prompts/prompt-settings.js';
 
+import type { ProjectStore } from './projects/store.js';
+
 export interface BotHarnessCore {
+  projects: ProjectStore;
   team: TeamService;
   spaces: WorkspaceSpaces;
   currentRoots(session: Session, kind: 'read' | 'write'): string[];

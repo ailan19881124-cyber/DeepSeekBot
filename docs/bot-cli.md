@@ -37,6 +37,21 @@ Worker templates live in `workers/<id>.json` in the Bot's Git-backed Memory work
 
 Pass `worker_id` to `create_assignment` to use a template for a new Assignment. An explicit worker model takes precedence and must be allowed for the Bot. With `"default"`, normal Assignment model selection applies. The Assignment keeps a snapshot of the worker persona, with skills listed as suggestions. Use a new continuity key to choose a different worker.
 
+### Projects and tasks
+
+```sh
+tobs project-create --name <name> [--instructions-file <path>] [--cwd <abs>]
+tobs project-list
+tobs project-show <project-id>
+tobs task-create --project <id> --title <title> --brief <brief> [--worker <id>]
+tobs task-list --project <id> [--state <state>]
+tobs task-update <task-id> --state <state> [--expected-revision <n>]
+```
+
+Use `--host <url>` to work with a running Host or `--home <path>` for an offline Host. Project data belongs to the Host owner and lives in its operational database. The Projects sidebar opens the board. Tasks start in `todo`, move through `doing` and `review` to `done`, and may move from `doing` or `review` to `failed`. A stale `--expected-revision` or an invalid transition is refused.
+
+Host-owner assistant Bots can use `project_create`, `task_create`, and `task_list`. Omitting a worker leaves the Bot's default selection in effect. A selected worker is recorded on the task. The Assignment API returns a Session id, so this version leaves `channelId` empty and creates the board task independently of Assignment execution.
+
 ### Reciprocal computer relationships
 
 `relationships cancel <id> --confirm` cancels a proposal only while the owning Host still considers it pending. If a lost sync reply hid activation, it refuses with `relationship-already-active` and leaves the approved relationship and grants intact. The browser uses this condition when cleaning up cancelled enrollment; an unavailable cleanup response never triggers an unconditional retry.

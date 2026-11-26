@@ -738,5 +738,9 @@
   {
     "id": "tob-memory-leases",
     "sha256": "8520f1204dc8d9cc8f65f1106f835df568cc86c3edcc7726dc67c6d247980fae"
+  },
+  {
+    "id": "projects-and-tasks",
+    "sha256": "aca89e0ee3b0c0ed3a4feb9133411a896b0fce03e636545a9b1db1a63dcddf5f"
   }
 ]

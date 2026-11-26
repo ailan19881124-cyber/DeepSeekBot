@@ -1,6 +1,12 @@
 export const BOT_CREATE_HELP = `tobs: manage your Bots
 
 Usage:
+  tobs project-create --name <name> [--instructions-file <path>] [--cwd <abs>]
+  tobs project-list
+  tobs project-show <project-id>
+  tobs task-create --project <id> --title <t> --brief <b> [--worker <id>]
+  tobs task-list --project <id> [--state <s>]
+  tobs task-update <task-id> --state <s> [--expected-revision <n>]
   tobs worker-list --bot <id>
   tobs worker-set --bot <id> --file <path>
   tobs worker-remove --bot <id> --id <worker-id>

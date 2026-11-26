@@ -57,6 +57,7 @@ type OrchestratorToolsContext = Pick<
   | 'onGenuiDiagnostic'
   | 'openAssignmentRoutes'
   | 'orchestratorModeChoices'
+  | 'projectTools'
   | 'orchestratorCwd'
   | 'resolveModelPlan'
   | 'runs'
@@ -141,6 +142,8 @@ export function orchestratorTools(
     ),
   );
   registerMemoryTools(currentRun, registerTool);
+  for (const tool of adapter.projectTools?.(run === CATALOG_RUN ? undefined : run.bot.slug) ?? [])
+    registerTool(tool);
   const resolveModelPlan = () => adapter.resolveModelPlan?.(run.bot.slug) ?? run.bot.modelPlan;
   const loadAssignmentModes = () => adapter.assignmentModes?.(run.bot.slug);
   const assignmentOptions: AssignmentToolOptions = {

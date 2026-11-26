@@ -37,6 +37,21 @@ tobs worker-remove --bot <id> --id <worker-id>
 
 在 `create_assignment` 中传入 `worker_id` 可为新 Assignment 选用模板。worker 指定的模型优先，并须在该 Bot 允许的模型范围内。`"default"` 沿用常规 Assignment 选模。Assignment 会保存一份 worker 人格快照，技能名称只作为提示。要在同一工作方向换用 worker，请使用新的 continuity key。
 
+### 项目与任务
+
+```sh
+tobs project-create --name <name> [--instructions-file <path>] [--cwd <abs>]
+tobs project-list
+tobs project-show <project-id>
+tobs task-create --project <id> --title <title> --brief <brief> [--worker <id>]
+tobs task-list --project <id> [--state <state>]
+tobs task-update <task-id> --state <state> [--expected-revision <n>]
+```
+
+运行中的 Host 使用 `--host <url>`，离线 Host 使用 `--home <path>`。项目由 Host 所有者管理，数据保存在现有 operational database。侧栏的「项目」打开看板。任务从 `todo` 开始，经 `doing`、`review` 推进到 `done`。`doing` 和 `review` 可转为 `failed`。版本已变化或状态迁移不合法时，Host 会拒绝更新。
+
+Host 所有者的 assistant Bot 可使用 `project_create`、`task_create`、`task_list`。省略 worker 时沿用该 Bot 的默认执行者。选中的 worker 会记录在任务中。现有 Assignment API 返回 Session ID，本版的看板任务独立创建，`channelId` 保持为空。
+
 ### 电脑双向关系
 
 `relationships cancel <关系ID> --confirm` 仅在所属 Host 仍将关系视为待批准时取消提议。同步回复丢失但关系已激活时，返回 `relationship-already-active`，保留已批准关系及授权。浏览器取消登记时使用相同条件；清理回复不可用时不改为无条件重试。

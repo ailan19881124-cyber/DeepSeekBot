@@ -1,3 +1,4 @@
+import { ProjectsBoard } from './projects-board.js';
 import { Button } from './ds/button.js';
 import { menuItemAllowed } from './team-menu.js';
 import { useTeamMode } from './team-state.js';
@@ -104,6 +105,7 @@ export function useBotSidebar(
   const channelUnread = useClientStore(selectChannelUnread);
   const mutedChannelSet = new Set(state.roster.muted);
   const prefs = useBotModePrefs((value) => value);
+  const [projectsOpen, setProjectsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const [pinSortMenuOpen, setPinSortMenuOpen] = useState(false);
@@ -416,6 +418,20 @@ export function useBotSidebar(
     return (
       <div className="bh-root bh-region" data-bh-tour="roster">
         {creationDialogs}
+        {projectsOpen && !member && !remoteOpen && actions.projects ? (
+          <ProjectsBoard
+            actions={actions.projects}
+            loadWorkers={actions.readWorkers}
+            bots={state.bots
+              .filter((bot) => !bot.deleted && bot.sharedBy === undefined)
+              .map((bot) => ({
+                id: bot.slug,
+                name: bot.displayName,
+              }))}
+            t={t}
+            onClose={() => setProjectsOpen(false)}
+          />
+        ) : null}
         {headerTarget
           ? createPortal(
               <InstantTooltipScope>{header}</InstantTooltipScope>,
@@ -423,6 +439,11 @@ export function useBotSidebar(
               'roster-header',
             )
           : header}
+        {!member && !remoteOpen && actions.projects ? (
+          <Button variant="ghost" onClick={() => setProjectsOpen(true)}>
+            {t('projects.heading')}
+          </Button>
+        ) : null}
         <EnvironmentOffline hostId={remoteTab.host.hostId} t={t} />
         <div className="bh-roster-list">
           <RemoteHostRows

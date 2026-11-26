@@ -6,10 +6,10 @@ import { z } from 'zod';
 import { atomicWriteFile } from '../fs/atomic-write.js';
 import { resolveMemoryPath } from './jail.js';
 
-const idSchema = z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/u);
+export const workerIdSchema = z.string().regex(/^[a-z][a-z0-9_-]{0,63}$/u);
 const text = (max: number) => z.string().trim().min(1).max(max);
 const workerSchema = z.strictObject({
-  id: idSchema,
+  id: workerIdSchema,
   name: text(120),
   persona: text(12_000),
   model: z.union([z.literal('default'), z.strictObject({ provider: text(200), model: text(200) })]),
@@ -49,7 +49,7 @@ export function parseWorkerFile(file: string, content: string): WorkerTemplate {
 }
 
 function workerId(value: unknown): string {
-  const result = idSchema.safeParse(value);
+  const result = workerIdSchema.safeParse(value);
   if (!result.success) throw new Error('Invalid worker id.');
   return result.data;
 }

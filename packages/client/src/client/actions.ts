@@ -1,3 +1,4 @@
+import { projectActions, type ProjectActions } from '@botharness/host-client/projects';
 import {
   loadWorkers,
   startAssignment,
@@ -177,6 +178,7 @@ export interface BridgeActions
     ComposerActions,
     BotActions,
     ChannelActions {
+  projects?: ProjectActions;
   readWorkers?(slug: string): Promise<WorkerTemplate[]>;
   startAssignment?(slug: string, draft: AssignmentDraft): Promise<void>;
   assignmentGrants?(slug: string): Promise<Array<{ value: string; label: string }>>;
@@ -544,6 +546,7 @@ export function createActions(
     conversationActions.openChannelById,
   );
   const actions: BridgeActions = {
+    projects: projectActions(host),
     readWorkers: (slug) => loadWorkers(host, slug),
     startAssignment: (slug, draft) => startAssignment(host, slug, draft),
     assignmentGrants: async (slug) => {
