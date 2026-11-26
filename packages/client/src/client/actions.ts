@@ -1,3 +1,10 @@
+import {
+  loadWorkers,
+  startAssignment,
+  type AssignmentDraft,
+} from '@botharness/host-client/workers';
+import { readWorkspaceGrants } from '@botharness/host-client/access-readers';
+import type { WorkerTemplate } from '@botharness/host-protocol/workers';
 import type {
   MarketplaceAvatar,
   MarketplaceAvatarEdit,
@@ -170,6 +177,9 @@ export interface BridgeActions
     ComposerActions,
     BotActions,
     ChannelActions {
+  readWorkers?(slug: string): Promise<WorkerTemplate[]>;
+  startAssignment?(slug: string, draft: AssignmentDraft): Promise<void>;
+  assignmentGrants?(slug: string): Promise<Array<{ value: string; label: string }>>;
   readonly teamCall?: BridgeCall;
   readonly openModelPresets?: () => void;
   genuiDocumentView(
@@ -534,6 +544,17 @@ export function createActions(
     conversationActions.openChannelById,
   );
   const actions: BridgeActions = {
+    readWorkers: (slug) => loadWorkers(host, slug),
+    startAssignment: (slug, draft) => startAssignment(host, slug, draft),
+    assignmentGrants: async (slug) => {
+      const { grants } = await readWorkspaceGrants(host, { slug });
+      return grants
+        .filter((grant) => !grant.revokedAt)
+        .map((grant) => ({
+          value: grant.id,
+          label: grant.workspaceTitle ?? grant.workspacePath,
+        }));
+    },
     ...botModeActions(call),
     teamCall: call,
     ...(folderAccess?.openModelPresets === undefined

@@ -43,6 +43,18 @@ import type { TranslateNS } from '@deepseek-ai/dsh-client-ui-slots';
 export const LOCALE_NS = 'botharness';
 
 export const zh = {
+  'projects.defaultWorker': '默认',
+  'projects.worker': '执行者',
+  'projects.workers': '执行者模板',
+  'projects.noWorkers': '尚未定义执行者模板',
+  'projects.newAssignment': '新建事项',
+  'projects.close': '关闭',
+  'projects.create': '创建',
+  'projects.title': '标题',
+  'projects.brief': '任务说明',
+  'projects.workspace': '工作区',
+  'projects.selectWorkspace': '选择工作区',
+  'projects.loading': '正在加载…',
   ...modelProviderCopy.zh,
   ...AVATAR_LABELS.zh,
   ...activityCopy.zh,
@@ -209,6 +221,18 @@ export function zhTranslate(key: BotHarnessKey | string, params?: Record<string,
 }
 
 export const en = {
+  'projects.defaultWorker': 'Default',
+  'projects.worker': 'Worker',
+  'projects.workers': 'Worker templates',
+  'projects.noWorkers': 'No worker templates',
+  'projects.newAssignment': 'New Assignment',
+  'projects.close': 'Close',
+  'projects.create': 'Create',
+  'projects.title': 'Title',
+  'projects.brief': 'Brief',
+  'projects.workspace': 'Workspace',
+  'projects.selectWorkspace': 'Select workspace',
+  'projects.loading': 'Loading…',
   ...modelProviderCopy.en,
   ...AVATAR_LABELS.en,
   ...activityCopy.en,

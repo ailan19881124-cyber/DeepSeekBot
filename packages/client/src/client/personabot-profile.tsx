@@ -1,3 +1,6 @@
+import { useMountedResource } from './mounted-resource.js';
+import { Button } from './ds/button.js';
+import { useWorkers, WorkCreateDialog, WorkerList } from './worker-chooser.js';
 import { ProfileActivitySection, ProfileCard, ProfilePanel } from './ds/profile-panel.js';
 import { useMemo, useState, type ReactElement } from 'react';
 
@@ -50,6 +53,28 @@ export function ProfileView({
   onPublishAvatar,
 }: ProfileViewProps): ReactElement {
   const [deleting, setDeleting] = useState(false);
+  const [creatingAssignment, setCreatingAssignment] = useState(false);
+  const [grants, setGrants] = useState<Array<{ value: string; label: string }>>();
+  const [grantError, setGrantError] = useState<string>();
+  const { read: workers, ref: workersRef } = useWorkers(
+    actions.readWorkers,
+    bot.deleted || bot.sharedBy !== undefined ? undefined : bot.slug,
+  );
+  const grantRef = useMountedResource<HTMLDivElement>(() => {
+    if (!creatingAssignment || !actions.assignmentGrants) return;
+    let active = true;
+    void actions.assignmentGrants(bot.slug).then(
+      (result) => {
+        if (active) setGrants(result);
+      },
+      (error: unknown) => {
+        if (active) setGrantError(String(error));
+      },
+    );
+    return () => {
+      active = false;
+    };
+  }, [creatingAssignment, actions.assignmentGrants, bot.slug]);
   const visibleCards =
     bot.sharedBy === undefined ? cards.list().filter((card) => card.visible?.(bot) ?? true) : [];
   const { botSkills, skillDetail, botSkillRemove, subscribeSkillCatalog } = actions;
@@ -107,6 +132,42 @@ export function ProfileView({
           ))}
         </ProfileActivitySection>
       )}
+      {actions.readWorkers && !bot.deleted && bot.sharedBy === undefined ? (
+        <ProfileCard label={t('projects.workers')}>
+          <div ref={workersRef}>
+            {workers?.workers ? (
+              <WorkerList workers={workers.workers} t={t} />
+            ) : (
+              <div role="status">{workers?.error ?? t('projects.loading')}</div>
+            )}
+          </div>
+          {actions.startAssignment && !bot.paused ? (
+            <Button
+              variant="outline"
+              onClick={() => {
+                setGrants(undefined);
+                setGrantError(undefined);
+                setCreatingAssignment(true);
+              }}
+            >
+              {t('projects.newAssignment')}
+            </Button>
+          ) : null}
+        </ProfileCard>
+      ) : null}
+      {creatingAssignment && actions.startAssignment ? (
+        <div ref={grantRef}>
+          <WorkCreateDialog
+            title={t('projects.newAssignment')}
+            t={t}
+            workers={workers?.workers ?? []}
+            workerError={grantError ?? workers?.error}
+            grants={grants}
+            onClose={() => setCreatingAssignment(false)}
+            onCreate={(draft) => actions.startAssignment!(bot.slug, draft)}
+          />
+        </div>
+      ) : null}
       {bot.deleted ? (
         <PersonaBotDeletionView
           key={`deleted-${bot.slug}`}

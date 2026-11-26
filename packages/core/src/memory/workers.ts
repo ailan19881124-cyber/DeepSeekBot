@@ -1,3 +1,4 @@
+import type { WorkerTemplate } from '@botharness/host-protocol/workers';
 import { lstatSync, mkdirSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import { extname, join } from 'node:path';
 import { parse } from 'yaml';
@@ -18,7 +19,7 @@ const workerSchema = z.strictObject({
     .optional(),
 });
 
-export type WorkerTemplate = z.infer<typeof workerSchema>;
+export type { WorkerTemplate } from '@botharness/host-protocol/workers';
 
 export function parseWorker(value: unknown): WorkerTemplate {
   const result = workerSchema.safeParse(value);
