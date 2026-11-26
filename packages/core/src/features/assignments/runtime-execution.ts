@@ -5,6 +5,7 @@ import type { ChannelStore } from '../../channels/store.js';
 import type { OperationalDatabaseModulePort } from '../../database/owner.js';
 import type { OutboundMessaging } from '../../messaging/outbound.js';
 import type { MessagingProcessing } from '../../messaging/typing.js';
+import { settleProjectTask } from '../../projects/assignment-lifecycle.js';
 import { requireAssignmentSource, requireSourceEffects } from '../../purge/fence.js';
 import type {
   AssignmentApprovalCapacity,
@@ -760,13 +761,15 @@ export function createAssignmentExecution(ports: AssignmentExecutionPorts) {
     const at = ports.now().toISOString();
     ports.database.transaction(
       (database) => {
-        database
+        const updated = database
           .prepare(
             "UPDATE assignments SET activity = ?, updated_at = ? WHERE session_id = ? AND stop_state = 'running'",
           )
           .run(activity, at, sessionId);
+        if (activity === 'error' && updated.changes)
+          settleProjectTask(database, sessionId, 'failed', at);
       },
-      ['assignments'],
+      activity === 'error' ? ['assignments', 'projects'] : ['assignments'],
     );
     ports.approvalCapacity.changed();
   }

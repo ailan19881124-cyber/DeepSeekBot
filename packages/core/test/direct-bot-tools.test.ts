@@ -376,7 +376,7 @@ describe('direct Bot tool runner', () => {
       model: 'default',
     });
     const runs = new Map<string, AssignmentAgentRun>();
-    vi.spyOn(agents, 'runAssignment').mockImplementation(async (run) => {
+    const runAssignment = vi.spyOn(agents, 'runAssignment').mockImplementation(async (run) => {
       runs.set(run.sessionId, run);
     });
     async function create(worker?: string) {
@@ -438,6 +438,12 @@ describe('direct Bot tool runner', () => {
           }) + '\n',
         );
       }
+      runAssignment.mockRejectedValueOnce(new Error('Model startup failed'));
+      const task = await create('reviewer');
+      expect(task.channelId).toBeTruthy();
+      await vi.waitFor(async () => {
+        expect(await read(task.id)).toMatchObject({ state: 'failed', channelId: task.channelId });
+      });
     } finally {
       await runtime.close();
     }

@@ -31,5 +31,9 @@ export function latestProjectAssignmentState(
     ) ORDER BY rowid DESC LIMIT 1
   `)
     .get(sessionId);
-  return result?.outcome === 'completed' ? 'review' : result ? 'failed' : 'doing';
+  if (result) return result.outcome === 'completed' ? 'review' : 'failed';
+  const assignment = db
+    .prepare('SELECT activity FROM assignments WHERE session_id = ?')
+    .get(sessionId);
+  return assignment?.activity === 'error' ? 'failed' : 'doing';
 }
