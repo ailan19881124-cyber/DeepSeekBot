@@ -1,0 +1,43 @@
+name: Build installers
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-14
+            args: --mac --arm64
+            artifact: mac-arm64
+            file: dist/*.dmg
+          - runner: ubuntu-22.04
+            args: --linux --x64
+            artifact: linux-x64
+            file: dist/*.AppImage
+          - runner: windows-2022
+            args: --win --x64
+            artifact: windows-x64
+            file: dist/*.exe
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: pnpm/action-setup@v4
+      - run: pnpm install --no-frozen-lockfile
+      - run: node scripts/prepare-runtime.mjs
+      - run: pnpm exec electron-builder ${{ matrix.args }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.file }}
+          if-no-files-found: error

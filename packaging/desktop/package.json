@@ -1,0 +1,54 @@
+{
+  "name": "dsh-bot-electron",
+  "productName": "DSH BOT",
+  "version": "1.0.0",
+  "description": "BotHarness desktop app",
+  "private": true,
+  "main": "electron/main.js",
+  "packageManager": "pnpm@11.28.5",
+  "scripts": {
+    "start": "electron .",
+    "prepare-runtime": "node scripts/prepare-runtime.mjs",
+    "prepare-runtime:local": "node scripts/prepare-runtime-local.mjs",
+    "build:mac": "bash scripts/build.sh",
+    "build:mac:local": "node scripts/prepare-runtime-local.mjs && bash scripts/build.sh"
+  },
+  "devDependencies": {
+    "electron": "44.11.5",
+    "electron-builder": "26.18.1"
+  },
+  "build": {
+    "appId": "local.botharness.dshbot.electron",
+    "artifactName": "${productName}-${version}-${arch}.${ext}",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
+      "identity": "-",
+      "category": "public.app-category.productivity",
+      "hardenedRuntime": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Utility"
+    },
+    "afterPack": "scripts/after-pack.js"
+  }
+}
