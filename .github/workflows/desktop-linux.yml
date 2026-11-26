@@ -1,0 +1,45 @@
+name: Linux desktop package
+
+on:
+  push:
+    branches: [p1-bot-kind]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  appimage:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: pnpm/action-setup@v6
+      - name: Build workspace packages
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+      - name: Install AppImage tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libfuse2
+      - uses: pnpm/action-setup@v6
+        with:
+          dest: ~/setup-desktop-pnpm
+          package_json_file: packaging/desktop/package.json
+      - name: Build Linux x64 AppImage
+        working-directory: packaging/desktop
+        run: |
+          pnpm install --frozen-lockfile
+          node scripts/prepare-runtime-local.mjs
+          pnpm exec electron-builder --linux --x64 --publish never
+          ls -lh dist/*.AppImage
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-linux-x64
+          path: packaging/desktop/dist/*.AppImage
+          if-no-files-found: error
+          compression-level: 0

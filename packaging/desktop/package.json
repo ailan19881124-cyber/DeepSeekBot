@@ -1,11 +1,9 @@
 {
   "name": "dsh-bot-electron",
-  "productName": "DSH BOT",
   "version": "1.0.0",
-  "description": "BotHarness desktop app",
   "private": true,
+  "description": "BotHarness desktop app",
   "main": "electron/main.js",
-  "packageManager": "pnpm@11.28.5",
   "scripts": {
     "start": "electron .",
     "prepare-runtime": "node scripts/prepare-runtime.mjs",
@@ -17,6 +15,7 @@
     "electron": "44.11.5",
     "electron-builder": "26.18.1"
   },
+  "packageManager": "pnpm@11.28.5",
   "build": {
     "appId": "local.botharness.dshbot.electron",
     "artifactName": "${productName}-${version}-${arch}.${ext}",
@@ -47,8 +46,10 @@
     },
     "linux": {
       "target": "AppImage",
-      "category": "Utility"
+      "category": "Utility",
+      "publish": null
     },
     "afterPack": "scripts/after-pack.js"
-  }
+  },
+  "productName": "DSH BOT"
 }
