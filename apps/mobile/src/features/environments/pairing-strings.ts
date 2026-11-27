@@ -4,6 +4,11 @@ import type { PairingFailure } from '@botharness/host-client/pairing';
 export const en = {
   pairTitle: 'Pair with your computer',
   ownerSignIn: {
+    firstTitle: 'Add computer',
+    tailscaleFirst: 'Open Tailscale on this phone and make sure it is connected before signing in.',
+    passwordInvalid: 'The owner password or username is incorrect. Try again.',
+    changeUsername: 'Change owner username',
+    otherComputer: 'Add a different computer',
     disabled: 'Password sign-in is turned off on this Host.',
     alreadyPaired: 'This Host is already on this phone.',
     credentialsInvalid: 'Check your username and password, then try again.',
@@ -192,6 +197,11 @@ export const en = {
 export const zh: typeof en = {
   pairTitle: '与电脑配对',
   ownerSignIn: {
+    firstTitle: '添加电脑',
+    tailscaleFirst: '连接前，请先在手机上打开 Tailscale 并确认已连接。',
+    passwordInvalid: '主人密码或用户名不正确，请重试。',
+    changeUsername: '修改主人用户名',
+    otherComputer: '添加其他电脑',
     disabled: '此 Host 已关闭账密登录。',
     alreadyPaired: '这台手机已添加此 Host。',
     credentialsInvalid: '检查用户名和密码后重试。',

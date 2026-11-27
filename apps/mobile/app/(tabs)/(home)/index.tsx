@@ -1,3 +1,4 @@
+import { firstHostAddress } from '../../../src/host/default-host';
 import { chatHref } from '../../../src/ui/shell/recent-chats';
 import { HostRow } from '../../../src/ui/chat/host-conversation-row';
 import { renderKeyboardFormScroll } from '../../../src/ui/primitives/keyboard-form';
@@ -169,6 +170,7 @@ const HomeContent = memo(function HomeContent({
   const deletionLook = useHostLook(deleting?.host.saved.hostId);
   const [refreshFailedHosts, setRefreshFailedHosts] = useState<string[]>([]);
   const enrollment = JSON.stringify(cloud.rows.map(cloudViewScope));
+  const defaultHost = firstHostAddress(saved);
   const unpaired =
     !cloudAvailable &&
     saved === null &&
@@ -176,10 +178,10 @@ const HomeContent = memo(function HomeContent({
     cloud.rows.length === 0;
   useFocusEffect(
     useCallback(() => {
-      if (!unpaired || pairingOffered.current) return;
+      if ((!unpaired && !defaultHost) || pairingOffered.current) return;
       pairingOffered.current = true;
-      router.push('/pair');
-    }, [unpaired]),
+      router.push(defaultHost ? '/pair/owner' : '/pair');
+    }, [defaultHost, unpaired]),
   );
   useFocusEffect(
     useCallback(() => {
@@ -501,7 +503,7 @@ const HomeContent = memo(function HomeContent({
       </>
     );
   if (saved === null && cloud.rows.length === 0)
-    return cloudAvailable ? (
+    return cloudAvailable && !defaultHost ? (
       <Redirect href="/cloud-join" />
     ) : (
       <>

@@ -287,3 +287,11 @@ React Native 0.88.1 queues rendering commands and transactions with a raw Schedu
 The runtime cost is one shared token capture, one shared proxy capture on iOS, and one atomic liveness check per deferred command/transaction; iOS delivery also promotes the weak owner to a strong local. Ownership tests require proxies to be released after the queue drains. It adds no timer, watcher or reload retry, and drops work only after its owning delegate is invalid. Simulator checks do not qualify display performance or a physical Release build.
 
 For the account-action screenshot fixture, set both `BOTHARNESS_MOBILE_WEB_PREVIEW=1` and `BOTHARNESS_MOBILE_ACCOUNT_PREVIEW=1`, export Web, and open `/qa/account-actions?scenario=linked-computers`. The second switch generates a screenshot-only copy of that route under `.humanlayer/` with its development-build guard removed; the original route and native builds keep their guard. For `--dev` exports, the preview also supplies a development application identity only to that route. Use the same route/data adapters on the base revision. Data and responses are synthetic; native confirmation dialogs and live-service behavior still require their own verification.
+
+### Configure a default computer for the first launch
+
+Set the GitHub Actions repository variable `DEFAULT_HOST_URL` to the computer's HTTPS origin, for example a Tailscale HTTPS address. The Android workflow embeds it as `EXPO_PUBLIC_DEFAULT_HOST_URL`. Set the same environment variable before building locally. An empty or invalid value leaves the existing pairing flow in place. Use a bare HTTPS origin with no path, query, or credentials.
+
+On the Host, enable owner password sign-in before distributing the APK. On first launch, connect Tailscale on the phone, then enter the owner password. The form starts with username `owner` and allows editing it if the Host uses a different name. The phone saves its device credential through the existing secure Host storage and reconnects on later launches.
+
+With a default computer configured, use the `android-apk-release` artifact if repository signing is set up, or `android-apk-preview` for private testing. The preview is a standalone build signed with the Android template debug key. The ordinary `android-apk-debug` artifact is an Expo development client and requires Metro.

@@ -1,3 +1,4 @@
+import { firstHostAddress } from '../src/host/default-host';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { computerEnvironmentKey } from '../src/host/conversation-environments';
 import { parseSavedHosts } from '@botharness/host-client/hosts';
@@ -126,9 +127,16 @@ vi.mock('@botharness/host-client/inbox', () => ({
     getSnapshot: () => ({ status: 'idle' }),
   }),
 }));
+const ownerSignIn = vi.hoisted(() => vi.fn());
+vi.mock('@botharness/host-client/owner-sign-in', async (original) => ({
+  ...(await original<typeof import('@botharness/host-client/owner-sign-in')>()),
+  signInOwnerDevice: ownerSignIn,
+}));
+
 vi.mock('../src/host/push-session', () => ({
   createPushSession: () => ({
     sync: syncPush,
+    enable: syncPush,
     forget: async (host: { hostId: string }) => void forgotten.push(host.hostId),
     retryFailed: async () => undefined,
     reflect() {},
@@ -183,6 +191,38 @@ beforeEach(() => {
   connection.snapshot = { connection: { status: 'connecting', route: '' } };
   connection.listeners.clear();
   vi.resetModules();
+});
+
+it('persists a first owner sign-in and restores it without prompting again', async () => {
+  vi.stubEnv('EXPO_PUBLIC_DEFAULT_HOST_URL', 'https://studio.example.ts.net');
+  const signed = host('studio');
+  ownerSignIn.mockResolvedValueOnce({ ok: true, value: signed });
+  try {
+    const { hostSession } = await import('../src/host/host-session');
+    await vi.waitFor(() => expect(hostSession.getState().saved).toBeNull());
+    const route = firstHostAddress(hostSession.getState().saved)!;
+    expect(
+      await hostSession.signInPassword({
+        route,
+        username: 'owner',
+        password: 'user-input',
+        deviceName: 'Phone',
+        signal: new AbortController().signal,
+        ownerOnly: true,
+      }),
+    ).toMatchObject({ ok: true });
+    expect(parseSavedHosts(secure.get('deepseekbot.hosts.v3'))).toMatchObject({
+      hosts: [signed],
+      current: signed.hostId,
+    });
+    vi.resetModules();
+    const restarted = (await import('../src/host/host-session')).hostSession;
+    await vi.waitFor(() => expect(restarted.getState().saved).toEqual(signed));
+    expect(firstHostAddress(restarted.getState().saved)).toBeUndefined();
+    expect(restarted.getState().client).toBeDefined();
+  } finally {
+    vi.unstubAllEnvs();
+  }
 });
 
 it('clears the saved chats when the Computer revokes this phone', async () => {

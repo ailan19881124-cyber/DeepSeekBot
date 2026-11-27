@@ -173,6 +173,23 @@ async function home(): Promise<HTMLElement> {
   return host;
 }
 
+it('opens owner pairing on first launch and skips it for a saved computer', async () => {
+  vi.stubEnv('EXPO_PUBLIC_DEFAULT_HOST_URL', 'https://studio.example');
+  hostState.removed = true;
+  try {
+    await home();
+    expect(push).toHaveBeenCalledWith('/pair/owner');
+    await act(async () => root?.unmount());
+    host?.remove();
+    push.mockClear();
+    hostState.removed = false;
+    await home();
+    expect(push).not.toHaveBeenCalledWith('/pair/owner');
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+
 async function type(view: HTMLElement, text: string): Promise<void> {
   const open = view.querySelector<HTMLButtonElement>('[data-testid="search-button"]');
   if (open) await act(async () => open.click());

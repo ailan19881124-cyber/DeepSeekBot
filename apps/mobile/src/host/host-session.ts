@@ -42,7 +42,7 @@ import { nativeNotifications } from './native-notifications';
 import { notificationAvatars } from './native-notification-avatars';
 import { avatarInputs } from './notification-avatars';
 import { revokePairing } from '@botharness/host-client/pairing';
-import type { OwnerSignInOptions } from '@botharness/host-client/owner-sign-in';
+import { signInOwnerDevice, type OwnerSignInOptions } from '@botharness/host-client/owner-sign-in';
 import {
   signInWithPassword,
   type PasswordSignInError,
@@ -653,6 +653,7 @@ export const hostSession = {
   async signInPassword(
     input: Pick<OwnerSignInOptions, 'route' | 'username' | 'password' | 'deviceName'> & {
       signal: AbortSignal;
+      ownerOnly?: boolean;
     },
   ): Promise<
     TeamResult<SavedHost & { role: 'owner' | 'member' }, PasswordSignInError | 'storage-failed'>
@@ -664,14 +665,21 @@ export const hostSession = {
       return { ok: false, code: 'storage-failed' };
     }
     const carrier = nativeCarrier();
-    const signed = await signInWithPassword({
+    const options: OwnerSignInOptions = {
       ...input,
       carrier,
       previous: (id, route) =>
         previous.find((host) => host.routes.includes(route)) ??
         previous.find((host) => host.hostId === id),
       allowExisting: (saved) => saved.member !== undefined || revokedHost(saved),
-    });
+    };
+    const signed = input.ownerOnly
+      ? await signInOwnerDevice(options).then((result) =>
+          result.ok
+            ? { ok: true as const, value: { ...result.value, role: 'owner' as const } }
+            : result,
+        )
+      : await signInWithPassword(options);
     if (!signed.ok || signed.value.role === 'member') return signed;
 
     const { role: _role, ...host } = signed.value;
