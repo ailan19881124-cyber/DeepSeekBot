@@ -3,6 +3,7 @@ import {
   ActivityFilterIcon,
   ActivitySearchIcon,
   ArchiveIcon,
+  ComputerIcon,
   MoreIcon,
   PlusIcon,
   SettingsIcon,
@@ -11,6 +12,7 @@ import {
 
 export type HeaderActionIcon =
   | 'archive'
+  | 'computer'
   | 'filter'
   | 'more'
   | 'add'
@@ -27,6 +29,7 @@ export type HeaderActionProps = {
 };
 
 const glyphs = {
+  computer: { Glyph: ComputerIcon, size: 'size' },
   archive: { Glyph: ArchiveIcon, size: 'size' },
   filter: { Glyph: ActivityFilterIcon, size: 'size' },
   add: { Glyph: PlusIcon, size: 'line' },

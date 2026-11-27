@@ -3,6 +3,16 @@ import type { PairingFailure } from '@botharness/host-client/pairing';
 
 export const en = {
   pairTitle: 'Pair with your computer',
+  deviceList: {
+    title: 'Choose a computer',
+    switch: 'Switch computer',
+    checking: 'Checking',
+    online: 'Online',
+    offline: 'Offline',
+    tailscale: 'Some computers are unreachable. Check that Tailscale is on for this phone.',
+    refresh: 'Check again',
+    switchFailed: 'Could not switch computers. Try again.',
+  },
   ownerSignIn: {
     firstTitle: 'Add computer',
     tailscaleFirst: 'Open Tailscale on this phone and make sure it is connected before signing in.',
@@ -196,6 +206,16 @@ export const en = {
 
 export const zh: typeof en = {
   pairTitle: '与电脑配对',
+  deviceList: {
+    title: '选择电脑',
+    switch: '切换电脑',
+    checking: '正在探测',
+    online: '在线',
+    offline: '离线',
+    tailscale: '有电脑无法连接，请检查手机上的 Tailscale 是否已开启。',
+    refresh: '重新探测',
+    switchFailed: '切换电脑失败，请重试。',
+  },
   ownerSignIn: {
     firstTitle: '添加电脑',
     tailscaleFirst: '连接前，请先在手机上打开 Tailscale 并确认已连接。',

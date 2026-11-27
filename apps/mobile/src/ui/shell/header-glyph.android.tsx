@@ -5,6 +5,7 @@ import type { HeaderActionIcon } from './header-glyph';
 
 const symbols = {
   archive: { android: 'archive' },
+  computer: { android: 'computer' },
   filter: { android: 'filter_list' },
   add: { android: 'add' },
   more: { android: 'more_vert' },

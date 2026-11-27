@@ -173,6 +173,27 @@ async function home(): Promise<HTMLElement> {
   return host;
 }
 
+it('opens the configured device list only on an unpaired launch', async () => {
+  vi.stubEnv('EXPO_PUBLIC_HOSTS', '[{"name":"Mac","url":"https://studio.example"}]');
+  try {
+    hostState.removed = true;
+    await home();
+    expect(push).toHaveBeenCalledWith('/pair/devices');
+    await act(async () => root?.unmount());
+    host?.remove();
+    push.mockClear();
+    hostState.removed = false;
+    await home();
+    expect(push).not.toHaveBeenCalledWith('/pair/devices');
+    const button = host?.querySelector<HTMLButtonElement>('[data-testid="device-switch"]');
+    expect(button).toBeTruthy();
+    await act(async () => button?.click());
+    expect(push).toHaveBeenCalledWith('/pair/devices');
+  } finally {
+    vi.unstubAllEnvs();
+  }
+});
+
 it('opens owner pairing on first launch and skips it for a saved computer', async () => {
   vi.stubEnv('EXPO_PUBLIC_DEFAULT_HOST_URL', 'https://studio.example');
   hostState.removed = true;

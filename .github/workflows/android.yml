@@ -35,12 +35,16 @@ jobs:
         working-directory: apps/mobile/android
         shell: bash
         env:
+          BUILT_IN_HOSTS: ${{ vars.EXPO_PUBLIC_HOSTS }}
           DEFAULT_HOST_URL: ${{ vars.DEFAULT_HOST_URL }}
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
+          if [[ -n "$BUILT_IN_HOSTS" ]]; then
+            export EXPO_PUBLIC_HOSTS="$BUILT_IN_HOSTS"
+          fi
           if [[ -n "$DEFAULT_HOST_URL" ]]; then
             export EXPO_PUBLIC_DEFAULT_HOST_URL="$DEFAULT_HOST_URL"
           fi
@@ -69,7 +73,7 @@ jobs:
             done
             variant=release
             artifact_variant=release
-          elif [[ -n "$DEFAULT_HOST_URL" ]]; then
+          elif [[ -n "$BUILT_IN_HOSTS" || -n "$DEFAULT_HOST_URL" ]]; then
             echo "::notice::Android signing secrets are incomplete. Building a standalone preview APK with the template debug key."
             unset ANDROID_KEYSTORE_BASE64 ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_ALIAS ANDROID_KEY_PASSWORD
             ./gradlew --no-daemon assembleRelease

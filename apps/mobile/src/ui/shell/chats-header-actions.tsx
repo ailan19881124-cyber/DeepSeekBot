@@ -9,13 +9,22 @@ import { PlusIcon } from './icons';
 export type ChatsHeaderActionsProps = {
   search: { label: string; onPress(): void };
   create: ChatsCreateButton | undefined;
+  devices?: { label: string; onPress(): void } | undefined;
 };
 
-export function ChatsHeaderActions({ search, create }: ChatsHeaderActionsProps) {
+export function ChatsHeaderActions({ search, create, devices }: ChatsHeaderActionsProps) {
   const theme = useDesignTheme();
   const unavailable = create !== undefined && (create.disabled || create.expanded);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+      {devices ? (
+        <HeaderAction
+          icon="computer"
+          label={devices.label}
+          testID="device-switch"
+          onPress={devices.onPress}
+        />
+      ) : null}
       <HeaderAction
         icon="search"
         label={search.label}

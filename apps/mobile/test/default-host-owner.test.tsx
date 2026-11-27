@@ -48,10 +48,12 @@ const session = vi.hoisted(() => ({
   getState: () => ({ saved: null }),
   signInPassword: vi.fn(),
 }));
+const params = vi.hoisted(() => ({ url: undefined as string | undefined }));
 const router = vi.hoisted(() => ({ dismissTo: vi.fn(), replace: vi.fn() }));
 vi.mock('expo-router', () => ({
   Redirect: () => null,
   useRouter: () => router,
+  useLocalSearchParams: () => params,
   useFocusEffect: () => undefined,
 }));
 vi.mock('../src/host/host-session', () => ({ hostSession: session }));
@@ -73,7 +75,8 @@ it('normalizes the injected HTTPS default only after loading an empty saved host
 });
 
 it('prefills the host, focuses the password, shows login errors and permits another attempt', async () => {
-  vi.stubEnv('EXPO_PUBLIC_DEFAULT_HOST_URL', 'https://studio.example');
+  vi.stubEnv('EXPO_PUBLIC_HOSTS', '[{"name":"Studio","url":"https://studio.example"}]');
+  params.url = 'https://studio.example';
   session.signInPassword
     .mockResolvedValueOnce({ ok: false, code: 'credentials-invalid' })
     .mockResolvedValueOnce({ ok: true, value: { role: 'owner', hostId: 'studio' } });
@@ -118,5 +121,6 @@ it('prefills the host, focuses the password, shows login errors and permits anot
   } finally {
     act(() => root.unmount());
     element.remove();
+    params.url = undefined;
   }
 });

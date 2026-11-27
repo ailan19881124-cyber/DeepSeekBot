@@ -1,9 +1,10 @@
 import Constants from 'expo-constants';
-import { Redirect, useFocusEffect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { computerEnvironmentKey } from '../../src/host/conversation-environments';
+import { configuredHosts } from '../../src/host/configured-hosts';
 import { firstHostAddress } from '../../src/host/default-host';
 import { hostSession } from '../../src/host/host-session';
 import { conversationFilter } from '../../src/host/native-conversation-filter';
@@ -17,7 +18,12 @@ import { useStrings } from '../../src/ui/strings';
 export default function OwnerPairScreen() {
   const t = useStrings();
   const router = useRouter();
-  const [route] = useState(() => firstHostAddress(hostSession.getState().saved));
+  const { url } = useLocalSearchParams<{ url?: string }>();
+  const [route] = useState(() =>
+    url === undefined
+      ? firstHostAddress(hostSession.getState().saved)
+      : configuredHosts().find((host) => host.url === url)?.url,
+  );
   const [username, setUsername] = useState('owner');
   const [editUsername, setEditUsername] = useState(false);
   const [password, setPassword] = useState('');
@@ -132,11 +138,14 @@ export default function OwnerPairScreen() {
         />
       ) : null}
       <Button
-        label={t.ownerSignIn.otherComputer}
+        label={url === undefined ? t.ownerSignIn.otherComputer : t.deviceList.title}
         variant="text"
         on="canvas"
         disabled={busy}
-        onPress={() => router.replace('/pair')}
+        onPress={() => {
+          if (url === undefined) router.replace('/pair');
+          else router.dismissTo('/pair/devices');
+        }}
       />
     </KeyboardFormScroll>
   );

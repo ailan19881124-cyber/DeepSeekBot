@@ -1,3 +1,4 @@
+import { configuredHosts } from '../../../src/host/configured-hosts';
 import { firstHostAddress } from '../../../src/host/default-host';
 import { chatHref } from '../../../src/ui/shell/recent-chats';
 import { HostRow } from '../../../src/ui/chat/host-conversation-row';
@@ -170,7 +171,11 @@ const HomeContent = memo(function HomeContent({
   const deletionLook = useHostLook(deleting?.host.saved.hostId);
   const [refreshFailedHosts, setRefreshFailedHosts] = useState<string[]>([]);
   const enrollment = JSON.stringify(cloud.rows.map(cloudViewScope));
+  const [builtInDevices] = useState(configuredHosts);
+  const hasDeviceList = builtInDevices.length > 0;
+  const showDeviceList = saved === null && hasDeviceList;
   const defaultHost = firstHostAddress(saved);
+  const openDevices = () => router.push('/pair/devices');
   const unpaired =
     !cloudAvailable &&
     saved === null &&
@@ -178,10 +183,10 @@ const HomeContent = memo(function HomeContent({
     cloud.rows.length === 0;
   useFocusEffect(
     useCallback(() => {
-      if ((!unpaired && !defaultHost) || pairingOffered.current) return;
+      if ((!unpaired && !defaultHost && !showDeviceList) || pairingOffered.current) return;
       pairingOffered.current = true;
-      router.push(defaultHost ? '/pair/owner' : '/pair');
-    }, [defaultHost, unpaired]),
+      router.push(showDeviceList ? '/pair/devices' : defaultHost ? '/pair/owner' : '/pair');
+    }, [defaultHost, showDeviceList, unpaired]),
   );
   useFocusEffect(
     useCallback(() => {
@@ -503,7 +508,7 @@ const HomeContent = memo(function HomeContent({
       </>
     );
   if (saved === null && cloud.rows.length === 0)
-    return cloudAvailable && !defaultHost ? (
+    return cloudAvailable && !defaultHost && !showDeviceList ? (
       <Redirect href="/cloud-join" />
     ) : (
       <>
@@ -528,7 +533,7 @@ const HomeContent = memo(function HomeContent({
             label={t.pairChoice.emptyAction}
             tone="primary"
             on="canvas"
-            onPress={() => router.push('/pair')}
+            onPress={() => router.push(showDeviceList ? '/pair/devices' : '/pair')}
           />
         </View>
       </>
@@ -664,11 +669,27 @@ const HomeContent = memo(function HomeContent({
             />
           ) : undefined
         }
-        nativeItems={create.nativeItem ? [create.nativeItem] : undefined}
+        nativeItems={[
+          ...(hasDeviceList
+            ? [
+                {
+                  type: 'button' as const,
+                  identifier: 'device-switch',
+                  label: t.deviceList.switch,
+                  icon: { type: 'sfSymbol' as const, name: 'desktopcomputer' as const },
+                  onPress: openDevices,
+                },
+              ]
+            : []),
+          ...(create.nativeItem ? [create.nativeItem] : []),
+        ]}
         actions={
           <ChatsHeaderActions
             search={{ label: t.openSearch, onPress: () => setSearching(true) }}
             create={create.button}
+            devices={
+              hasDeviceList ? { label: t.deviceList.switch, onPress: openDevices } : undefined
+            }
           />
         }
       >

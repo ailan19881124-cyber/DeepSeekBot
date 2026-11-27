@@ -18,6 +18,7 @@ import { HeaderIconButton } from './header-icon-button';
 
 const symbols = {
   archive: 'archivebox',
+  computer: 'desktopcomputer',
   filter: 'line.3.horizontal.decrease',
   more: 'ellipsis',
   add: 'plus',
